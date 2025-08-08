@@ -230,16 +230,16 @@
   
   /* Answer buttons - in fixed panel */
   .answer-buttons {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
     margin-top: 0.5rem;
     width: 100% !important;
     max-width: 100% !important;
   }
   
   .answer-button {
-    padding: 12px 8px;
-    font-size: 0.9rem;
+    padding: 8px 4px;
+    font-size: 0.8rem;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -263,9 +263,10 @@
   }
   
   .answer-section h3 {
-    font-size: 1rem;
+    font-size: 0.9rem;
     margin-bottom: 0.5rem;
     color: #1f2937;
+    line-height: 1.2;
   }
   
   /* Settings Panel Styles */
@@ -628,13 +629,13 @@
   }
   
   .answer-buttons {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
   }
   
   .answer-button {
-    padding: 10px 6px;
-    font-size: 0.8rem;
+    padding: 6px 3px;
+    font-size: 0.7rem;
   }
   
   .note-buttons {
@@ -679,8 +680,9 @@
   }
   
   .answer-section h3 {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     margin-bottom: 0.3rem;
+    line-height: 1.1;
   }
   
   .key-selector,

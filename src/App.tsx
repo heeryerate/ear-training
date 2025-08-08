@@ -435,16 +435,21 @@ function App() {
           <button 
             onClick={testAudio}
             style={{
-              margin: '10px',
-              padding: '10px 20px',
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              padding: '6px 12px',
+              fontSize: '0.8rem',
               backgroundColor: '#ff6b6b',
               color: 'white',
               border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
+              borderRadius: '4px',
+              cursor: 'pointer',
+              opacity: 0.8,
+              zIndex: 1000
             }}
           >
-            🔊 Test Audio
+            🔊
           </button>
         </div>
 
