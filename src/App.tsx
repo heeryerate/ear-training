@@ -12,6 +12,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const [pianoLoaded, setPianoLoaded] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set(getDiatonicNotes('C'))); // Default to C major scale
   
   // Ear training exercise state
@@ -42,16 +43,36 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize Tone.js with a piano sampler for realistic piano sounds
+    // Initialize Tone.js with a piano sampler with more comprehensive samples
     const newPiano = new Tone.Sampler({
       urls: {
         "C4": "C4.mp3",
-        "D#4": "Ds4.mp3",
+        "D#4": "Ds4.mp3", 
         "F#4": "Fs4.mp3",
+        "A4": "A4.mp3",
       },
       baseUrl: "https://tonejs.github.io/audio/salamander/",
       onload: () => {
         console.log("Piano samples loaded successfully");
+        setPianoLoaded(true);
+      },
+      onerror: (error) => {
+        console.error("Error loading piano samples:", error);
+        // Fallback: Create a simple synth-based piano if samples fail
+        console.log("Creating fallback synth-based piano");
+        const fallbackPiano = new Tone.PolySynth(Tone.Synth, {
+          oscillator: {
+            type: "triangle"
+          },
+          envelope: {
+            attack: 0.02,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 1
+          }
+        }).toDestination();
+        setPiano(fallbackPiano as any);
+        setPianoLoaded(true);
       }
     }).toDestination();
     
@@ -65,42 +86,42 @@ function App() {
   // Enhanced mobile-friendly audio initialization
   const initializeAudio = async () => {
     try {
-      // Check if audio context is already running
-      if (Tone.context.state === 'running') {
-        console.log("Audio context already running");
-        return;
-      }
-
-      console.log("Initializing audio context for mobile...");
+      console.log("Initializing audio context...");
+      console.log(`Current audio context state: ${Tone.context.state}`);
+      console.log(`Piano loaded: ${pianoLoaded}`);
+      console.log(`Piano object:`, piano);
       
-      // Start the audio context
+      // Always try to start the audio context
       await Tone.start();
+      console.log(`Audio context state after Tone.start(): ${Tone.context.state}`);
       
-      // Additional mobile audio unlock - especially important for iOS
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
-      if (isMobile || isIOS) {
-        console.log("Mobile device detected - performing audio unlock");
-        
-        // Create a short, silent audio event to unlock the audio context
-        if (piano) {
-          // Use the piano sampler to unlock audio
-          piano.triggerAttackRelease("C4", "32n", Tone.now());
-          
-          // Also create a silent oscillator as backup
-          const unlockOsc = new Tone.Oscillator(220, "sine");
-          unlockOsc.volume.value = -100; // Very quiet but not silent
-          unlockOsc.connect(Tone.getDestination());
-          unlockOsc.start();
-          unlockOsc.stop("+0.01");
-          unlockOsc.dispose();
+      // Wait for piano to be loaded before proceeding
+      if (!pianoLoaded) {
+        console.log("Waiting for piano samples to load...");
+        // Create a fallback simple tone for immediate audio unlock
+        const tempOsc = new Tone.Oscillator(440, "sine").toDestination();
+        tempOsc.volume.value = -60; // Quiet but audible
+        tempOsc.start();
+        tempOsc.stop("+0.1");
+        setTimeout(() => tempOsc.dispose(), 200);
+      } else if (piano) {
+        console.log("Piano loaded, testing audio with piano sample...");
+        // Test audio with a very short note
+        try {
+          piano.triggerAttackRelease("C4", "32n");
+          console.log("Piano test note played successfully");
+        } catch (pianoError) {
+          console.error("Piano test failed:", pianoError);
+          // Fallback to oscillator
+          const testOsc = new Tone.Oscillator(440, "sine").toDestination();
+          testOsc.volume.value = -60;
+          testOsc.start();
+          testOsc.stop("+0.1");
+          setTimeout(() => testOsc.dispose(), 200);
         }
-        
-        console.log("Mobile audio context unlocked");
       }
       
-      console.log(`Audio context state: ${Tone.context.state}`);
+      console.log(`Final audio context state: ${Tone.context.state}`);
       setAudioInitialized(true);
     } catch (error) {
       console.error("Error initializing audio:", error);
@@ -108,8 +129,10 @@ function App() {
       try {
         console.log("Attempting alternative audio initialization...");
         const audioContext = Tone.getContext();
+        console.log(`Native AudioContext state: ${audioContext.state}`);
         if (audioContext.state === 'suspended') {
           await audioContext.resume();
+          console.log(`AudioContext resumed, new state: ${audioContext.state}`);
         }
         setAudioInitialized(true);
       } catch (fallbackError) {
@@ -119,12 +142,22 @@ function App() {
   };
 
   const playChordProgression = async () => {
-    if (!piano) return;
+    if (!piano) {
+      console.error("Piano not initialized");
+      return;
+    }
+
+    if (!pianoLoaded) {
+      console.error("Piano samples not loaded yet");
+      return;
+    }
 
     setIsPlaying(true);
     
     // Initialize audio for mobile devices
     await initializeAudio();
+
+    console.log("Starting chord progression playback...");
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -138,20 +171,34 @@ function App() {
       // Play each note in the chord with small time offsets to avoid conflicts
       chord.notes.forEach((note, noteIndex) => {
         const noteTime = chordStartTime + (noteIndex * 0.01); // 10ms offset between notes
-        piano.triggerAttackRelease(note, '1n', noteTime);
+        try {
+          piano.triggerAttackRelease(note, '1n', noteTime);
+          console.log(`Triggered note: ${note} at time ${noteTime}`);
+        } catch (noteError) {
+          console.error(`Error playing note ${note}:`, noteError);
+        }
       });
     });
 
     // Reset playing state after the progression finishes
     setTimeout(() => {
       setIsPlaying(false);
+      console.log("Chord progression playback completed");
     }, progression.chords.length * 1000);
   };
 
 
 
   const startEarTrainingExercise = async () => {
-    if (!piano || selectedNotes.size === 0) return;
+    if (!piano || selectedNotes.size === 0) {
+      console.error("Cannot start exercise: piano not ready or no notes selected");
+      return;
+    }
+
+    if (!pianoLoaded) {
+      console.error("Cannot start exercise: piano samples not loaded yet");
+      return;
+    }
 
     setIsPlaying(true);
     setShowAnswerButtons(false);
@@ -159,6 +206,8 @@ function App() {
     
     // Initialize audio for mobile devices
     await initializeAudio();
+    
+    console.log("Starting ear training exercise...");
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -182,7 +231,12 @@ function App() {
       console.log(`Playing random note for exercise: ${randomNote}`);
       
       // Play the note after a short pause
-      piano.triggerAttackRelease(randomNote, '2n');
+      try {
+        piano.triggerAttackRelease(randomNote, '2n');
+        console.log(`Successfully triggered exercise note: ${randomNote}`);
+      } catch (noteError) {
+        console.error(`Error playing exercise note ${randomNote}:`, noteError);
+      }
       
       // Show answer buttons after the note plays
       setTimeout(() => {
@@ -244,12 +298,22 @@ function App() {
   };
 
   const startNextExercise = async () => {
-    if (!piano || selectedNotes.size === 0) return;
+    if (!piano || selectedNotes.size === 0) {
+      console.error("Cannot start next exercise: piano not ready or no notes selected");
+      return;
+    }
+
+    if (!pianoLoaded) {
+      console.error("Cannot start next exercise: piano samples not loaded yet");
+      return;
+    }
 
     setIsPlaying(true);
     
     // Initialize audio for mobile devices
     await initializeAudio();
+    
+    console.log("Starting next exercise...");
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -273,7 +337,12 @@ function App() {
       console.log(`Playing random note for exercise: ${randomNote}`);
       
       // Play the note after a short pause
-      piano.triggerAttackRelease(randomNote, '2n');
+      try {
+        piano.triggerAttackRelease(randomNote, '2n');
+        console.log(`Successfully triggered next exercise note: ${randomNote}`);
+      } catch (noteError) {
+        console.error(`Error playing next exercise note ${randomNote}:`, noteError);
+      }
       
       // Show answer buttons after the note plays
       setTimeout(() => {
@@ -389,7 +458,15 @@ function App() {
 
   // Function to repeat the current note (with chord progression context)
   const repeatCurrentNote = async () => {
-    if (!piano || !currentNote || isPlaying) return;
+    if (!piano || !currentNote || isPlaying) {
+      console.error("Cannot repeat note: piano not ready, no current note, or already playing");
+      return;
+    }
+
+    if (!pianoLoaded) {
+      console.error("Cannot repeat note: piano samples not loaded yet");
+      return;
+    }
     
     setIsPlaying(true);
     await initializeAudio();
@@ -403,13 +480,22 @@ function App() {
       
       chord.notes.forEach((note, noteIndex) => {
         const noteTime = chordStartTime + (noteIndex * 0.01); // 10ms offset between notes
-        piano.triggerAttackRelease(note, '1n', noteTime);
+        try {
+          piano.triggerAttackRelease(note, '1n', noteTime);
+        } catch (noteError) {
+          console.error(`Error playing chord note ${note}:`, noteError);
+        }
       });
     });
 
     // Play the current note after the chord progression
     setTimeout(() => {
-      piano.triggerAttackRelease(currentNote, '2n');
+      try {
+        piano.triggerAttackRelease(currentNote, '2n');
+        console.log(`Successfully repeated note: ${currentNote}`);
+      } catch (noteError) {
+        console.error(`Error repeating note ${currentNote}:`, noteError);
+      }
       
       // Reset playing state after note duration
       setTimeout(() => {
@@ -476,7 +562,12 @@ function App() {
       <header className="App-header">
         <div className="hero-section">
           <h1>🎵 Ear Training Key Center</h1>
-          {!audioInitialized && (
+          {!pianoLoaded && (
+            <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '0.5rem' }}>
+              🎹 Loading piano samples...
+            </p>
+          )}
+          {pianoLoaded && !audioInitialized && (
             <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '0.5rem' }}>
               👆 Tap anywhere to enable audio
             </p>
