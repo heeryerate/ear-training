@@ -1,7 +1,6 @@
-/* iPad landscape should use desktop styles - override mobile styles */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape),
-       (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
-  /* Force desktop layout for iPad landscape */
+/* Large iPad landscape and desktop should use desktop styles */
+@media (min-width: 1200px) and (orientation: landscape) {
+  /* Force desktop layout for large screens only */
   .desktop-only {
     display: block !important;
   }
@@ -18,10 +17,10 @@
   }
 }
 
-/* Mobile-specific styles - applied to mobile devices, iPad portrait, and phone landscape */
-@media (max-width: 1024px) and (orientation: portrait), 
-       (max-width: 480px),
-       (max-width: 768px) and (orientation: landscape) {
+/* Mobile-specific styles - applied to mobile devices, iPad portrait, iPad landscape, and phone landscape */
+@media (max-width: 1199px) and (orientation: portrait), 
+       (max-width: 1199px) and (orientation: landscape),
+       (max-width: 480px) {
   /* Global overflow prevention */
   * {
     box-sizing: border-box;
@@ -701,9 +700,9 @@
 }
 
 /* Stats panel mobile styles */
-@media (max-width: 1024px) and (orientation: portrait), 
-       (max-width: 480px),
-       (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 1199px) and (orientation: portrait), 
+       (max-width: 1199px) and (orientation: landscape),
+       (max-width: 480px) {
   .stats-container {
     padding: 0 0.5rem;
     width: 100% !important;

@@ -1493,9 +1493,9 @@
 }
 
 /* Mobile histogram overrides - ensure mobile styles take precedence */
-@media (max-width: 1024px) and (orientation: portrait), 
-       (max-width: 480px),
-       (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 1199px) and (orientation: portrait), 
+       (max-width: 1199px) and (orientation: landscape),
+       (max-width: 480px) {
   .histogram-container {
     grid-template-columns: repeat(6, 1fr) !important;
     gap: 6px !important;
