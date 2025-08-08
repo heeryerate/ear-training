@@ -305,6 +305,19 @@
     flex: none !important;
   }
   
+  /* Mobile-specific font size adjustments */
+  .note-selection-panel h2,
+  .chord-progression h2 {
+    font-size: 1.6rem !important;
+    margin-bottom: 0.6rem !important;
+  }
+  
+  .key-selector h3,
+  .progression-selector h3 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+  
   .settings-panel h2 {
     font-size: 1.4rem;
     margin-bottom: 0.5rem;
@@ -539,6 +552,19 @@
     min-width: auto !important;
     box-sizing: border-box !important;
     flex: none !important;
+  }
+  
+  /* Even smaller font sizes for small mobile devices */
+  .note-selection-panel h2,
+  .chord-progression h2 {
+    font-size: 1.4rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .key-selector h3,
+  .progression-selector h3 {
+    font-size: 1rem !important;
+    margin-bottom: 0.3rem !important;
   }
   
   .settings-panel h2 {
