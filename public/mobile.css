@@ -18,9 +18,10 @@
   }
 }
 
-/* Mobile-specific styles - applied to mobile devices and iPad portrait */
+/* Mobile-specific styles - applied to mobile devices, iPad portrait, and phone landscape */
 @media (max-width: 1024px) and (orientation: portrait), 
-       (max-width: 480px) {
+       (max-width: 480px),
+       (max-width: 768px) and (orientation: landscape) {
   /* Global overflow prevention */
   * {
     box-sizing: border-box;
@@ -306,10 +307,15 @@
   }
   
   /* Mobile-specific font size adjustments */
-  .note-selection-panel h2,
-  .chord-progression h2 {
+  .note-selection-panel h2 {
     font-size: 1.6rem !important;
     margin-bottom: 0.6rem !important;
+  }
+  
+  .chord-progression h2 {
+    font-size: 1.3rem !important;
+    margin-bottom: 0.5rem !important;
+    line-height: 1.2 !important;
   }
   
   .key-selector h3,
@@ -555,10 +561,15 @@
   }
   
   /* Even smaller font sizes for small mobile devices */
-  .note-selection-panel h2,
-  .chord-progression h2 {
+  .note-selection-panel h2 {
     font-size: 1.4rem !important;
     margin-bottom: 0.5rem !important;
+  }
+  
+  .chord-progression h2 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.4rem !important;
+    line-height: 1.1 !important;
   }
   
   .key-selector h3,
@@ -691,7 +702,8 @@
 
 /* Stats panel mobile styles */
 @media (max-width: 1024px) and (orientation: portrait), 
-       (max-width: 480px) {
+       (max-width: 480px),
+       (max-width: 768px) and (orientation: landscape) {
   .stats-container {
     padding: 0 0.5rem;
     width: 100% !important;
