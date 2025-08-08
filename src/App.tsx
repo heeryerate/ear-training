@@ -61,13 +61,39 @@ function App() {
     };
   }, []);
 
+  // Mobile-friendly audio initialization
+  const initializeAudio = async () => {
+    try {
+      // Check if we're on iOS Safari
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+      
+      if (isIOS && isSafari) {
+        console.log("iOS Safari detected - initializing audio context");
+        // For iOS Safari, we need to start the audio context on user interaction
+        await Tone.start();
+        // Play a silent note to unlock audio
+        const silentOsc = new Tone.Oscillator(440, "sine").toDestination();
+        silentOsc.volume.value = -Infinity; // Silent
+        silentOsc.start();
+        silentOsc.stop("+0.1");
+        console.log("Audio context unlocked for iOS Safari");
+      } else {
+        // For other browsers, start audio context normally
+        await Tone.start();
+      }
+    } catch (error) {
+      console.error("Error initializing audio:", error);
+    }
+  };
+
   const playChordProgression = async () => {
     if (!piano) return;
 
     setIsPlaying(true);
     
-    // Start audio context
-    await Tone.start();
+    // Initialize audio for mobile devices
+    await initializeAudio();
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -100,8 +126,8 @@ function App() {
     setShowAnswerButtons(false);
     setFeedback('');
     
-    // Start audio context
-    await Tone.start();
+    // Initialize audio for mobile devices
+    await initializeAudio();
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -191,8 +217,8 @@ function App() {
 
     setIsPlaying(true);
     
-    // Start audio context
-    await Tone.start();
+    // Initialize audio for mobile devices
+    await initializeAudio();
 
     // Get the transposed chord progression
     const progression = transposeProgression(selectedProgression, selectedKey);
@@ -357,7 +383,7 @@ function App() {
     if (!piano || !currentNote || isPlaying) return;
     
     setIsPlaying(true);
-    await Tone.start();
+    await initializeAudio();
     
     console.log(`Repeating note with chord progression context: ${currentNote}`);
     
