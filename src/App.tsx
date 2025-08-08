@@ -11,6 +11,7 @@ import ExercisePanel from './components/ExercisePanel';
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
+  const [audioInitialized, setAudioInitialized] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set(getDiatonicNotes('C'))); // Default to C major scale
   
   // Ear training exercise state
@@ -61,29 +62,59 @@ function App() {
     };
   }, []);
 
-  // Mobile-friendly audio initialization
+  // Enhanced mobile-friendly audio initialization
   const initializeAudio = async () => {
     try {
-      // Check if we're on iOS Safari
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-      
-      if (isIOS && isSafari) {
-        console.log("iOS Safari detected - initializing audio context");
-        // For iOS Safari, we need to start the audio context on user interaction
-        await Tone.start();
-        // Play a silent note to unlock audio
-        const silentOsc = new Tone.Oscillator(440, "sine").toDestination();
-        silentOsc.volume.value = -Infinity; // Silent
-        silentOsc.start();
-        silentOsc.stop("+0.1");
-        console.log("Audio context unlocked for iOS Safari");
-      } else {
-        // For other browsers, start audio context normally
-        await Tone.start();
+      // Check if audio context is already running
+      if (Tone.context.state === 'running') {
+        console.log("Audio context already running");
+        return;
       }
+
+      console.log("Initializing audio context for mobile...");
+      
+      // Start the audio context
+      await Tone.start();
+      
+      // Additional mobile audio unlock - especially important for iOS
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      if (isMobile || isIOS) {
+        console.log("Mobile device detected - performing audio unlock");
+        
+        // Create a short, silent audio event to unlock the audio context
+        if (piano) {
+          // Use the piano sampler to unlock audio
+          piano.triggerAttackRelease("C4", "32n", Tone.now());
+          
+          // Also create a silent oscillator as backup
+          const unlockOsc = new Tone.Oscillator(220, "sine");
+          unlockOsc.volume.value = -100; // Very quiet but not silent
+          unlockOsc.connect(Tone.getDestination());
+          unlockOsc.start();
+          unlockOsc.stop("+0.01");
+          unlockOsc.dispose();
+        }
+        
+        console.log("Mobile audio context unlocked");
+      }
+      
+      console.log(`Audio context state: ${Tone.context.state}`);
+      setAudioInitialized(true);
     } catch (error) {
       console.error("Error initializing audio:", error);
+      // Try alternative initialization
+      try {
+        console.log("Attempting alternative audio initialization...");
+        const audioContext = Tone.getContext();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        setAudioInitialized(true);
+      } catch (fallbackError) {
+        console.error("Fallback audio initialization failed:", fallbackError);
+      }
     }
   };
 
@@ -400,6 +431,31 @@ function App() {
     };
   }, [showAnswerButtons]);
 
+  // Add a global click handler to unlock audio on first user interaction
+  useEffect(() => {
+    let audioUnlocked = false;
+    
+    const unlockAudio = async () => {
+      if (!audioUnlocked) {
+        console.log("First user interaction - unlocking audio");
+        await initializeAudio();
+        audioUnlocked = true;
+        // Remove the event listener after first interaction
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('click', unlockAudio);
+      }
+    };
+
+    // Listen for first touch or click
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio);
+
+    return () => {
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+  }, [piano]);
+
   const allNotes: Note[] = [
     { note: 'C4', name: 'C' },
     { note: 'C#4', name: 'C#' },
@@ -420,6 +476,11 @@ function App() {
       <header className="App-header">
         <div className="hero-section">
           <h1>🎵 Ear Training Key Center</h1>
+          {!audioInitialized && (
+            <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '0.5rem' }}>
+              👆 Tap anywhere to enable audio
+            </p>
+          )}
         </div>
 
         {/* Tab Navigation */}
