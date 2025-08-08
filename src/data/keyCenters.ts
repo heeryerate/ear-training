@@ -49,8 +49,7 @@ export const getSemitonesFromC = (key: string): number => {
   return keyMap[key] || 0;
 };
 
-// Major scale pattern in semitones: W-W-H-W-W-W-H
-const majorScalePattern = [0, 2, 4, 5, 7, 9, 11];
+
 
 // Audio note mapping (using sharps for Tone.js compatibility)
 // All notes use sharp notation for audio playback

@@ -77,7 +77,7 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
             onClick={onStartExercise}
             disabled={selectedNotes.size === 0 || isPlaying}
           >
-            {isPlaying ? '▶ Playing...' : '▶ Start Exercise'}
+            {isPlaying ? '▶ Playing...' : '▶ Start'}
           </button>
         ) : (
           <>
@@ -89,15 +89,13 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
               ⏹ Stop
             </button>
             
-            {showAnswerButtons && (
-              <button 
-                className="control-button repeat-button"
-                onClick={onRepeatNote}
-                disabled={isPlaying || !currentNote}
-              >
-                ↻ Repeat
-              </button>
-            )}
+            <button 
+              className="control-button repeat-button"
+              onClick={onRepeatNote}
+              disabled={isPlaying || !currentNote}
+            >
+              ↻ Repeat
+            </button>
           </>
         )}
       </div>

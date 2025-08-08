@@ -293,29 +293,7 @@ function App() {
       .slice(0, limit);
   };
 
-  // Get confusion pairs for a specific note
-  const getConfusionsFor = (note: string): Array<{ guessedNote: string, count: number }> => {
-    return Object.entries(confusionPairs)
-      .filter(([pair]) => pair.startsWith(note + '→'))
-      .map(([pair, count]) => {
-        const guessedNote = pair.split('→')[1];
-        return { guessedNote, count };
-      })
-      .sort((a, b) => b.count - a.count);
-  };
 
-  const getWeakestNotes = () => {
-    const notesWithData = Object.entries(noteStats)
-      .filter(([_, stats]) => stats.correct + stats.incorrect > 0)
-      .map(([note, stats]) => ({
-        note,
-        accuracy: stats.correct / (stats.correct + stats.incorrect),
-        total: stats.correct + stats.incorrect
-      }))
-      .sort((a, b) => a.accuracy - b.accuracy);
-    
-    return notesWithData.slice(0, 3);
-  };
 
   const getStrongestNotes = () => {
     const notesWithData = Object.entries(noteStats)
@@ -409,6 +387,19 @@ function App() {
     }, progression.chords.length * 1000); // Wait for chord progression to finish
   };
 
+  // Mobile-specific: Add body padding when answer section is visible
+  useEffect(() => {
+    if (showAnswerButtons) {
+      document.body.classList.add('answer-section-visible');
+    } else {
+      document.body.classList.remove('answer-section-visible');
+    }
+
+    return () => {
+      document.body.classList.remove('answer-section-visible');
+    };
+  }, [showAnswerButtons]);
+
   const allNotes: Note[] = [
     { note: 'C4', name: 'C' },
     { note: 'C#4', name: 'C#' },
@@ -434,6 +425,12 @@ function App() {
         {/* Tab Navigation */}
         <div className="tab-navigation">
           <button 
+            className={`tab-button mobile-only ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            ⚙️ Settings
+          </button>
+          <button 
             className={`tab-button ${activeTab === 'exercise' ? 'active' : ''}`}
             onClick={() => setActiveTab('exercise')}
           >
@@ -449,8 +446,8 @@ function App() {
         
         {activeTab === 'exercise' ? (
           <div className="panels-container">
-            {/* Left Side: Note Selection and Chord Progression */}
-            <div className="left-panel">
+            {/* Desktop: Side-by-side layout */}
+            <div className="left-panel desktop-only">
               <NoteSelector
                 allNotes={allNotes}
                 selectedNotes={selectedNotes}
@@ -470,7 +467,7 @@ function App() {
               />
             </div>
 
-            {/* Right Side: Exercise Interface */}
+            {/* Exercise Interface - Full width on mobile */}
             <div className="right-panel">
               <ExercisePanel
                 score={score}
@@ -487,6 +484,31 @@ function App() {
                 onAnswerSelection={handleAnswerSelection}
                 onResetScore={resetScore}
                 onRepeatNote={repeatCurrentNote}
+              />
+            </div>
+          </div>
+        ) : activeTab === 'settings' ? (
+          <div className="settings-container">
+            <div className="settings-panel">
+              <h2>⚙️ Exercise Settings</h2>
+              <p>Configure your note selection and chord progression preferences.</p>
+              
+              <NoteSelector
+                allNotes={allNotes}
+                selectedNotes={selectedNotes}
+                selectedKey={selectedKey}
+                onToggleNote={toggleNote}
+                disabled={isExerciseMode}
+              />
+
+              <ChordProgressionPanel
+                selectedProgression={selectedProgression}
+                selectedKey={selectedKey}
+                onProgressionChange={setSelectedProgression}
+                onKeyChange={handleKeyChange}
+                onPlayProgression={playChordProgression}
+                isPlaying={isPlaying}
+                disabled={isExerciseMode}
               />
             </div>
           </div>

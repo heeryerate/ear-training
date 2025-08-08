@@ -32,4 +32,4 @@ export interface KeyCenter {
   tonic: string;
 }
 
-export type ActiveTab = 'exercise' | 'stats';
+export type ActiveTab = 'exercise' | 'stats' | 'settings';
