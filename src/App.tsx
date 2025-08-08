@@ -301,15 +301,38 @@ function App() {
         isPerfect: stats.correct > 0 && stats.incorrect === 0
       }));
 
-    // Sort: perfect notes first (by total attempts desc), then by accuracy desc
-    const sorted = notesWithData.sort((a, b) => {
-      if (a.isPerfect && !b.isPerfect) return -1;
-      if (!a.isPerfect && b.isPerfect) return 1;
-      if (a.isPerfect && b.isPerfect) return b.total - a.total; // More attempts = better for perfect notes
-      return b.accuracy - a.accuracy;
-    });
-    
-    return sorted.slice(0, 5);
+    // Separate perfect and non-perfect notes
+    const perfectNotes = notesWithData.filter(n => n.isPerfect);
+    const nonPerfectNotes = notesWithData.filter(n => !n.isPerfect);
+
+    // Sort non-perfect notes by accuracy desc
+    const sortedNonPerfect = nonPerfectNotes.sort((a, b) => b.accuracy - a.accuracy);
+
+    const result = [];
+
+    // If there are perfect notes, group them together as the first item
+    if (perfectNotes.length > 0) {
+      const totalPerfectAttempts = perfectNotes.reduce((sum, note) => sum + note.total, 0);
+      result.push({
+        notes: perfectNotes.map(n => n.note),
+        accuracy: 1,
+        total: totalPerfectAttempts,
+        isPerfect: true,
+        isGroup: true
+      });
+    }
+
+    // Add individual non-perfect notes (limit total results to 5)
+    const remainingSlots = 5 - result.length;
+    result.push(...sortedNonPerfect.slice(0, remainingSlots).map(note => ({
+      notes: [note.note],
+      accuracy: note.accuracy,
+      total: note.total,
+      isPerfect: false,
+      isGroup: false
+    })));
+
+    return result;
   };
 
   const toggleNote = (note: string) => {
@@ -513,13 +536,18 @@ function App() {
                   <h3>✨ Strongest Notes</h3>
                   <div className="note-list">
                     {getStrongestNotes().length > 0 ? (
-                      getStrongestNotes().map(({ note, accuracy, total, isPerfect }) => (
-                        <div key={note} className={`note-item ${isPerfect ? 'perfect' : 'strong'}`}>
-                          <span className="note-name">{getNoteDisplayName(note, selectedKey)}</span>
-                          <span className="note-accuracy">
-                            {isPerfect ? '💯' : `${Math.round(accuracy * 100)}%`}
+                      getStrongestNotes().map((item, index) => (
+                        <div key={item.isGroup ? 'perfect-group' : item.notes[0]} className={`note-item ${item.isPerfect ? 'perfect' : 'strong'}`}>
+                          <span className="note-name">
+                            {item.isGroup 
+                              ? item.notes.map(note => getNoteDisplayName(note, selectedKey)).join(', ')
+                              : getNoteDisplayName(item.notes[0], selectedKey)
+                            }
                           </span>
-                          <span className="note-total">({total} attempts)</span>
+                          <span className="note-accuracy">
+                            {item.isPerfect ? '💯' : `${Math.round(item.accuracy * 100)}%`}
+                          </span>
+                          <span className="note-total">({item.total} attempts)</span>
                         </div>
                       ))
                     ) : (
