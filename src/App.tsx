@@ -61,31 +61,7 @@ function App() {
     };
   }, []);
 
-  // Simple audio test function
-  const testAudio = async () => {
-    try {
-      console.log("Testing basic audio...");
-      await Tone.start();
-      console.log(`Audio context state: ${Tone.context.state}`);
-      
-      // Test with simple oscillator first
-      const testOsc = new Tone.Oscillator(440, "sine").toDestination();
-      testOsc.start();
-      testOsc.stop("+0.5");
-      console.log("Test oscillator played");
-      
-      // Test piano if available
-      if (piano) {
-        console.log("Testing piano...");
-        piano.triggerAttackRelease("C4", "2n");
-        console.log("Piano test note triggered");
-      } else {
-        console.log("Piano not ready");
-      }
-    } catch (error) {
-      console.error("Audio test failed:", error);
-    }
-  };
+
 
   // Mobile-friendly audio initialization
   const initializeAudio = async () => {
@@ -432,25 +408,6 @@ function App() {
       <header className="App-header">
         <div className="hero-section">
           <h1>🎵 Ear Training Key Center</h1>
-          <button 
-            onClick={testAudio}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              padding: '6px 12px',
-              fontSize: '0.8rem',
-              backgroundColor: '#ff6b6b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              opacity: 0.8,
-              zIndex: 1000
-            }}
-          >
-            🔊
-          </button>
         </div>
 
         {/* Tab Navigation */}

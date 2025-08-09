@@ -1215,7 +1215,7 @@
 
 .answer-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   max-width: 540px;
   margin: 0 auto;
