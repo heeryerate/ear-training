@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import * as Tone from 'tone';
 
-import ChordProgressionPanel from './ChordProgressionPanel';
-import ExercisePanel from './ExercisePanel';
-import NoteSelector from './NoteSelector';
 import { transposeProgression } from '../data/chordProgressions';
 import { getDiatonicNotes, getNoteDisplayName } from '../data/keyCenters';
 import { ActiveTab, Note, NoteStats } from '../types';
+import ChordProgressionPanel from './ChordProgressionPanel';
+import ExercisePanel from './ExercisePanel';
+import NoteSelector from './NoteSelector';
 
 function EarTrainingApp() {
   const [isPlaying, setIsPlaying] = useState(false);

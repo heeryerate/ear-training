@@ -1,10 +1,10 @@
 import './App.css';
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
-import Menu from './components/Menu';
 import EarTrainingApp from './components/EarTrainingApp';
+import Menu from './components/Menu';
 
 function App() {
   return (
