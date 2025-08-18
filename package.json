@@ -2,6 +2,7 @@
   "name": "ear-training-app",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://galetone.com/ear-training",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
@@ -11,8 +12,10 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "@types/react-router-dom": "^5.3.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.1",
     "react-scripts": "5.0.1",
     "tone": "^15.1.22",
     "typescript": "^4.9.5",

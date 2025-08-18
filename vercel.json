@@ -1,0 +1,21 @@
+{
+  "rewrites": [
+    {
+      "source": "/ear-training/(.*)",
+      "destination": "/ear-training/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/ear-training/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/ear-training/(.*)",
+      "dest": "/ear-training/index.html"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install"
+}
