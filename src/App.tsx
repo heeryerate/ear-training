@@ -1,18 +1,12 @@
 import './App.css';
 
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
-import Menu from './components/Menu';
 import EarTrainingApp from './components/EarTrainingApp';
+import Menu from './components/Menu';
 
 function App() {
-  const location = useLocation();
-  
-  // If we're at the root path and in production (custom domain), show the menu
-  // If we're at /ear-training, show the ear training app
-  // If we're in development, show the menu at root and ear training at /ear-training
-  
   return (
     <Routes>
       <Route path="/" element={<Menu />} />
