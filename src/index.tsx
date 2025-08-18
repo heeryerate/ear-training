@@ -10,9 +10,13 @@ import reportWebVitals from './reportWebVitals';
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
+// Only use basename in production (when deployed to galetone.com/ear-training)
+const basename = process.env.NODE_ENV === 'production' ? '/ear-training' : '';
+
 root.render(
   <React.StrictMode>
-    <BrowserRouter basename="/ear-training">
+    <BrowserRouter basename={basename}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
