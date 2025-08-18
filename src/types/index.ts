@@ -20,12 +20,6 @@ export interface NoteStats {
   incorrect: number;
 }
 
-export interface ConfusionPair {
-  actualNote: string;
-  guessedNote: string;
-  count: number;
-}
-
 export interface KeyCenter {
   key: string;
   name: string;

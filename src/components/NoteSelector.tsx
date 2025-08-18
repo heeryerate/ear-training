@@ -1,6 +1,7 @@
 import React from 'react';
-import { Note } from '../types';
+
 import { getNoteDisplayName } from '../data/keyCenters';
+import { Note } from '../types';
 
 interface NoteSelectorProps {
   allNotes: Note[];
@@ -15,12 +16,12 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
   selectedNotes,
   selectedKey,
   onToggleNote,
-  disabled
+  disabled,
 }) => {
   return (
     <div className="note-selection-panel">
       <h2>🎼 Note Selection</h2>
-      
+
       <div className="note-selection">
         <div className="note-buttons">
           {allNotes.map(({ note }) => (
@@ -34,7 +35,6 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
             </button>
           ))}
         </div>
-
       </div>
     </div>
   );

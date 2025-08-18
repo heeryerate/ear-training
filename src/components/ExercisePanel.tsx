@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { getNoteDisplayName } from '../data/keyCenters';
 
 interface ExercisePanelProps {
@@ -32,12 +33,12 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
   onStopExercise,
   onAnswerSelection,
   onResetScore,
-  onRepeatNote
+  onRepeatNote,
 }) => {
   return (
     <div className="exercise-panel">
       <h2>🎧 Ear Training Exercise</h2>
-      
+
       {/* Score Card */}
       <div className="score-card">
         <div className="score-display">
@@ -52,7 +53,10 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
           <div className="score-item">
             <span className="score-label">Accuracy:</span>
             <span className="score-value">
-              {totalAttempts > 0 ? Math.round((score / totalAttempts) * 100) : 0}%
+              {totalAttempts > 0
+                ? Math.round((score / totalAttempts) * 100)
+                : 0}
+              %
             </span>
           </div>
         </div>
@@ -60,7 +64,9 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
 
       {/* Feedback Display */}
       {feedback && (
-        <div className={`feedback ${feedback.includes('Correct') ? 'correct' : 'incorrect'}`}>
+        <div
+          className={`feedback ${feedback.includes('Correct') ? 'correct' : 'incorrect'}`}
+        >
           {feedback}
         </div>
       )}
@@ -70,9 +76,9 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
         <button className="control-button reset-button" onClick={onResetScore}>
           ↻ Reset
         </button>
-        
+
         {!isExerciseMode ? (
-          <button 
+          <button
             className="control-button start-button"
             onClick={onStartExercise}
             disabled={selectedNotes.size === 0 || isPlaying}
@@ -81,15 +87,15 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
           </button>
         ) : (
           <>
-            <button 
+            <button
               className="control-button stop-button"
               onClick={onStopExercise}
               disabled={isPlaying}
             >
               ⏹ Stop
             </button>
-            
-            <button 
+
+            <button
               className="control-button repeat-button"
               onClick={onRepeatNote}
               disabled={isPlaying || !currentNote}
@@ -104,9 +110,9 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
       {showAnswerButtons && (
         <div className="answer-section">
           <h3>🎧 What note did you hear?</h3>
-          
+
           <div className="answer-buttons">
-            {Array.from(selectedNotes).map((note) => (
+            {Array.from(selectedNotes).map(note => (
               <button
                 key={note}
                 className="answer-button"

@@ -1,7 +1,8 @@
 import React from 'react';
-import { KeyCenter } from '../types';
-import { keyCenters } from '../data/keyCenters';
+
 import { getAvailableProgressions } from '../data/chordProgressions';
+import { keyCenters } from '../data/keyCenters';
+import { KeyCenter } from '../types';
 
 interface ChordProgressionPanelProps {
   selectedProgression: string;
@@ -20,14 +21,14 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
   onKeyChange,
   onPlayProgression,
   isPlaying,
-  disabled
+  disabled,
 }) => {
   const progressions = getAvailableProgressions();
 
   return (
     <div className="chord-progression">
       <h2>🎼 Key Center Context</h2>
-      
+
       {/* Key Center Selector */}
       <div className="key-selector">
         <h3>Key Center:</h3>
@@ -44,12 +45,12 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
           ))}
         </div>
       </div>
-      
+
       {/* Progression Selector */}
       <div className="progression-selector">
         <h3>Progression:</h3>
         <div className="progression-buttons">
-          {progressions.map((progression) => (
+          {progressions.map(progression => (
             <button
               key={progression}
               className={`progression-button ${selectedProgression === progression ? 'selected' : ''}`}
@@ -61,13 +62,13 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
           ))}
         </div>
       </div>
-      
-      <button 
+
+      <button
         className="play-button"
         onClick={onPlayProgression}
         disabled={isPlaying}
       >
-                  {isPlaying ? 'Playing...' : '▶ Play Progression'}
+        {isPlaying ? 'Playing...' : '▶ Play Progression'}
       </button>
     </div>
   );

@@ -1,0 +1,40 @@
+# Cursor Rules for Ear Training App
+
+## Scope
+- Make minimal, atomic diffs per request (single file or tightly-coupled pair).
+- Do not open or summarize unrelated files; rely on ARCHITECTURE.md, INVARIANTS.md.
+- Focus on one change at a time with clear boundaries.
+
+## Style
+- Follow ESLint/Prettier configs; no stylistic edits beyond lint autofix.
+- Maintain existing code style and formatting.
+- Use consistent naming conventions as defined in INVARIANTS.md.
+
+## Safety
+- Preserve public API unless explicitly requested to change.
+- Add tests/updates for any logic change.
+- Validate musical data invariants before making changes.
+- Ensure audio context safety and resource cleanup.
+
+## Output
+- Return a unified diff only, with brief commit message (≤ 72 chars subject).
+- Include only the necessary changes with sufficient context.
+- Use clear, descriptive commit messages following conventional commits.
+
+## Musical Domain Rules
+- Validate all note names use scientific notation (e.g., C4, F#3).
+- Ensure chord progressions maintain harmonic relationships.
+- Preserve key center and scale patterns.
+- Handle audio context initialization safely.
+
+## React/TypeScript Rules
+- Use proper TypeScript types from src/types/.
+- Follow React hooks patterns and cleanup.
+- Maintain component prop interfaces.
+- Use error boundaries for audio-dependent components.
+
+## Performance Rules
+- Minimize unnecessary re-renders.
+- Clean up audio resources properly.
+- Handle async operations with try-catch.
+- Validate state consistency before updates.

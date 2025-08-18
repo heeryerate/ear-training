@@ -4,11 +4,11 @@
   .desktop-only {
     display: block !important;
   }
-  
+
   .mobile-only {
     display: none !important;
   }
-  
+
   /* Ensure histogram uses desktop layout */
   .histogram-container {
     grid-template-columns: repeat(12, 1fr) !important;
@@ -18,22 +18,23 @@
 }
 
 /* Mobile-specific styles - applied to mobile devices, iPad portrait, iPad landscape, and phone landscape */
-@media (max-width: 1199px) and (orientation: portrait), 
-       (max-width: 1199px) and (orientation: landscape),
-       (max-width: 480px) {
+@media (max-width: 1199px) and (orientation: portrait),
+  (max-width: 1199px) and (orientation: landscape),
+  (max-width: 480px) {
   /* Global overflow prevention */
   * {
     box-sizing: border-box;
   }
-  
-  html, body {
+
+  html,
+  body {
     overflow-x: hidden !important;
     width: 100% !important;
     max-width: 100vw !important;
     margin: 0 !important;
     padding: 0 !important;
   }
-  
+
   .App {
     overflow-x: hidden !important;
     width: 100% !important;
@@ -41,7 +42,7 @@
     margin: 0 !important;
     padding: 0 !important;
   }
-  
+
   .App-header {
     overflow-x: hidden !important;
     width: 100% !important;
@@ -50,29 +51,29 @@
     padding: 0.5rem !important;
     padding-top: 1rem !important;
   }
-  
+
   /* Hide desktop-only elements on mobile */
   .desktop-only {
     display: none !important;
   }
-  
+
   /* Show mobile-only elements */
   .mobile-only {
     display: block !important;
   }
-  
+
   /* Hide main tab titles on mobile for more concise interface */
   .exercise-panel h2,
   .settings-panel h2,
   .stats-panel h2 {
     display: none !important;
   }
-  
+
   /* Hide description text on mobile */
   .settings-panel p {
     display: none !important;
   }
-  
+
   /* Keep useful section titles visible on mobile */
   .note-selection-panel h2,
   .chord-progression h2,
@@ -80,21 +81,21 @@
   .progression-selector h3 {
     display: block !important;
   }
-  
+
   /* Compact header */
   .App-header h1 {
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .App-header p {
     font-size: 1rem;
   }
-  
+
   .hero-section {
     margin-bottom: 1rem;
   }
-  
+
   /* Tab navigation */
   .tab-navigation {
     margin-bottom: 1.5rem;
@@ -103,7 +104,7 @@
     justify-content: center;
     gap: 0.5rem;
   }
-  
+
   .tab-button {
     padding: 8px 20px;
     font-size: 0.9rem;
@@ -115,7 +116,7 @@
     justify-content: center;
     text-align: center;
   }
-  
+
   /* Mobile layout - Exercise panel takes full width */
   .panels-container {
     flex-direction: column;
@@ -126,7 +127,7 @@
     overflow-x: hidden !important;
     margin: 0 !important;
   }
-  
+
   .left-panel,
   .right-panel {
     min-width: auto !important;
@@ -136,7 +137,7 @@
     margin: 0 !important;
     overflow-x: hidden !important;
   }
-  
+
   /* Exercise Panel - Full width on mobile */
   .exercise-panel {
     padding: 1rem !important;
@@ -148,14 +149,14 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   /* Exercise panel content alignment */
   .exercise-panel h2 {
     font-size: 1.4rem;
     margin-bottom: 0.5rem;
     text-align: center;
   }
-  
+
   /* Score card alignment */
   .score-card {
     width: 100% !important;
@@ -165,7 +166,7 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   .score-display {
     width: 100% !important;
     max-width: 100% !important;
@@ -173,7 +174,7 @@
     justify-content: space-between;
     overflow-x: hidden !important;
   }
-  
+
   .score-item {
     flex: 1;
     min-width: 0;
@@ -181,15 +182,15 @@
     text-align: center;
     overflow-x: hidden !important;
   }
-  
+
   .score-label {
     font-size: 0.8rem;
   }
-  
+
   .score-value {
     font-size: 1.2rem;
   }
-  
+
   /* Exercise controls alignment */
   .exercise-controls-compact {
     width: 100% !important;
@@ -200,7 +201,7 @@
     flex-wrap: wrap;
     overflow-x: hidden !important;
   }
-  
+
   .control-button {
     flex: 1;
     max-width: 120px;
@@ -208,7 +209,7 @@
     margin: 2px;
     overflow-x: hidden !important;
   }
-  
+
   /* Make all control buttons the same size on mobile */
   .control-button.reset-button,
   .control-button.start-button,
@@ -221,13 +222,13 @@
     font-size: 0.9rem;
     white-space: nowrap;
   }
-  
+
   /* Ensure repeat button is visible */
   .control-button.repeat-button {
     display: block !important;
     visibility: visible !important;
   }
-  
+
   /* Answer buttons - in fixed panel */
   .answer-buttons {
     grid-template-columns: repeat(4, 1fr);
@@ -236,7 +237,7 @@
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .answer-button {
     padding: 8px 4px;
     font-size: 0.8rem;
@@ -244,7 +245,7 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   /* Answer Section - Fixed positioning that doesn't block controls */
   .answer-section {
     position: fixed;
@@ -262,7 +263,7 @@
     box-sizing: border-box !important;
     overflow: visible !important;
   }
-  
+
   .answer-section h3 {
     font-size: clamp(0.9rem, 2.5vw, 1.2rem) !important;
     margin-bottom: 0.8rem !important;
@@ -286,7 +287,7 @@
     -webkit-background-clip: unset !important;
     background-clip: unset !important;
   }
-  
+
   /* Settings Panel Styles */
   .settings-container {
     padding: 0 0.5rem;
@@ -295,14 +296,14 @@
     overflow-x: hidden !important;
     margin: 0 !important;
   }
-  
+
   .settings-panel {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: 1.5rem;
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 
+    box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
@@ -313,7 +314,7 @@
     box-sizing: border-box !important;
     margin: 0 !important;
   }
-  
+
   /* Force equal width for all panels in settings */
   .note-selection-panel,
   .chord-progression {
@@ -323,25 +324,25 @@
     box-sizing: border-box !important;
     flex: none !important;
   }
-  
+
   /* Mobile-specific font size adjustments */
   .note-selection-panel h2 {
     font-size: 1.6rem !important;
     margin-bottom: 0.6rem !important;
   }
-  
+
   .chord-progression h2 {
     font-size: 1.3rem !important;
     margin-bottom: 0.5rem !important;
     line-height: 1.2 !important;
   }
-  
+
   .key-selector h3,
   .progression-selector h3 {
     font-size: 1.1rem !important;
     margin-bottom: 0.4rem !important;
   }
-  
+
   .settings-panel h2 {
     font-size: 1.4rem;
     margin-bottom: 0.5rem;
@@ -351,7 +352,7 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  
+
   .settings-panel p {
     font-size: 1rem;
     margin-bottom: 1.5rem;
@@ -359,64 +360,64 @@
     color: #d1d5db;
     font-weight: 400;
   }
-  
+
   /* Note selection - more compact */
   .note-buttons {
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
-  
+
   .note-button {
     padding: 8px 4px;
     font-size: 0.9rem;
     min-height: 40px;
   }
-  
+
   /* Progression buttons - 2 columns */
   .progression-buttons {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
-  
+
   .progression-button {
     padding: 8px 12px;
     font-size: 0.8rem;
   }
-  
+
   /* Key buttons - compact */
   .key-buttons {
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
   }
-  
+
   .key-button {
     padding: 6px 8px;
     font-size: 0.8rem;
     min-height: 32px;
   }
-  
+
   .play-button {
     padding: 12px 20px;
     font-size: 0.9rem;
     margin-top: 0.5rem;
   }
-  
+
   /* Reduce spacing */
   .key-selector,
   .progression-selector {
     margin-bottom: 1rem;
   }
-  
+
   /* Ensure proper spacing between panels in settings */
   .note-selection-panel,
   .chord-progression {
     margin-bottom: 1.5rem !important;
   }
-  
+
   .note-selection {
     margin-bottom: 0.5rem;
   }
-  
+
   /* Feedback - more compact */
   .feedback {
     padding: 0.5rem;
@@ -437,13 +438,13 @@
     width: 100% !important;
     max-width: 100vw !important;
   }
-  
+
   .App {
     overflow-x: hidden !important;
     width: 100% !important;
     max-width: 100vw !important;
   }
-  
+
   .App-header {
     padding: 0.5rem;
     padding-top: 1rem;
@@ -451,16 +452,16 @@
     width: 100% !important;
     max-width: 100vw !important;
   }
-  
+
   .App-header h1 {
     font-size: 1.5rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .hero-section {
     margin-bottom: 0.5rem;
   }
-  
+
   .tab-navigation {
     margin-bottom: 1rem;
     padding: 4px;
@@ -468,7 +469,7 @@
     justify-content: center;
     gap: 0.25rem;
   }
-  
+
   .tab-button {
     padding: 6px 12px;
     font-size: 0.8rem;
@@ -480,7 +481,7 @@
     justify-content: center;
     text-align: center;
   }
-  
+
   .panels-container {
     gap: 0.5rem;
     padding: 0 !important;
@@ -488,7 +489,7 @@
     max-width: 100vw !important;
     overflow-x: hidden !important;
   }
-  
+
   .left-panel,
   .right-panel {
     min-width: auto;
@@ -497,7 +498,7 @@
     padding: 0 0.25rem !important;
     overflow-x: hidden !important;
   }
-  
+
   .note-selection-panel,
   .exercise-panel,
   .chord-progression {
@@ -508,38 +509,38 @@
     overflow-x: hidden !important;
     margin-bottom: 1rem !important;
   }
-  
+
   /* Exercise panel specific fixes for small screens */
   .exercise-panel h2 {
     font-size: 1.2rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .score-card {
     padding: 0.75rem;
   }
-  
+
   .score-display {
     gap: 0.25rem;
   }
-  
+
   .score-item {
     padding: 0.3rem;
     min-width: 0;
   }
-  
+
   .exercise-controls-compact {
     gap: 0.25rem;
     margin: 0.75rem 0;
   }
-  
+
   .control-button {
     max-width: 100px;
     min-width: 70px;
     padding: 6px 8px;
     font-size: 0.8rem;
   }
-  
+
   /* Make all control buttons the same size on small mobile */
   .control-button.reset-button,
   .control-button.start-button,
@@ -552,14 +553,14 @@
     font-size: 0.8rem;
     white-space: nowrap;
   }
-  
+
   .settings-container {
     padding: 0 0.25rem;
     width: 100% !important;
     max-width: 100vw !important;
     overflow-x: hidden !important;
   }
-  
+
   .settings-panel {
     padding: 1rem;
     width: 100% !important;
@@ -567,7 +568,7 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   /* Force equal width for all panels in settings on small mobile */
   .note-selection-panel,
   .chord-progression {
@@ -577,137 +578,135 @@
     box-sizing: border-box !important;
     flex: none !important;
   }
-  
+
   /* Even smaller font sizes for small mobile devices */
   .note-selection-panel h2 {
     font-size: 1.4rem !important;
     margin-bottom: 0.5rem !important;
   }
-  
+
   .chord-progression h2 {
     font-size: 1.1rem !important;
     margin-bottom: 0.4rem !important;
     line-height: 1.1 !important;
   }
-  
+
   .key-selector h3,
   .progression-selector h3 {
     font-size: 1rem !important;
     margin-bottom: 0.3rem !important;
   }
-  
+
   .settings-panel h2 {
     font-size: 1.2rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .settings-panel p {
     font-size: 0.9rem;
     margin-bottom: 1rem;
   }
-  
+
   .note-selection-panel h2,
   .exercise-panel h2,
   .chord-progression h2 {
     font-size: 1.2rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .key-selector h3,
   .progression-selector h3 {
     font-size: 0.9rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .score-display {
     gap: 0.25rem;
   }
-  
+
   .score-item {
     padding: 0.3rem;
     min-width: 50px;
   }
-  
+
   .score-label {
     font-size: 0.7rem;
   }
-  
+
   .score-value {
     font-size: 1rem;
   }
-  
+
   .exercise-controls-compact {
     gap: 0.25rem;
   }
-  
+
   .control-button {
     padding: 6px 12px;
     font-size: 0.8rem;
     min-width: 70px;
   }
-  
+
   .answer-buttons {
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
   }
-  
+
   .answer-button {
     padding: 6px 3px;
     font-size: 0.7rem;
   }
-  
+
   .note-buttons {
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
   }
-  
+
   .note-button {
     padding: 6px 2px;
     font-size: 0.8rem;
     min-height: 36px;
   }
-  
+
   .progression-buttons {
     grid-template-columns: 1fr;
     gap: 4px;
   }
-  
+
   .progression-button {
     padding: 6px 8px;
     font-size: 0.7rem;
   }
-  
+
   .key-buttons {
     grid-template-columns: repeat(3, 1fr);
     gap: 3px;
   }
-  
+
   .key-button {
     padding: 4px 6px;
     font-size: 0.7rem;
     min-height: 28px;
   }
-  
+
   .play-button {
     padding: 10px 16px;
     font-size: 0.8rem;
   }
-  
+
   .answer-section {
     padding: 0.75rem;
   }
-  
 
-  
   .key-selector,
   .progression-selector {
     margin-bottom: 0.75rem;
   }
-  
+
   .note-selection {
     margin-bottom: 0.3rem;
   }
-  
+
   .feedback {
     padding: 0.3rem;
     font-size: 0.8rem;
@@ -716,9 +715,9 @@
 }
 
 /* Stats panel mobile styles */
-@media (max-width: 1199px) and (orientation: portrait), 
-       (max-width: 1199px) and (orientation: landscape),
-       (max-width: 480px) {
+@media (max-width: 1199px) and (orientation: portrait),
+  (max-width: 1199px) and (orientation: landscape),
+  (max-width: 480px) {
   .stats-container {
     padding: 0 0.5rem;
     width: 100% !important;
@@ -726,7 +725,7 @@
     overflow-x: hidden !important;
     margin: 0 !important;
   }
-  
+
   .stats-panel {
     padding: 1.5rem;
     width: 100% !important;
@@ -735,24 +734,24 @@
     margin: 0 !important;
     overflow-x: hidden !important;
   }
-  
+
   .stats-panel h2 {
     font-size: 1.4rem;
     margin-bottom: 1rem;
   }
-  
+
   .summary-card {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   .summary-card h3 {
     font-size: 1.2rem;
     margin-bottom: 0.75rem;
   }
-  
+
   .summary-stats {
     flex-direction: row;
     gap: 0.5rem;
@@ -762,7 +761,7 @@
     overflow-x: hidden !important;
     flex-wrap: wrap;
   }
-  
+
   .summary-item {
     min-width: auto;
     padding: 0.5rem;
@@ -771,27 +770,27 @@
     min-width: 80px;
     box-sizing: border-box !important;
   }
-  
+
   .summary-label {
     font-size: 0.8rem;
     word-wrap: break-word;
     white-space: normal;
     line-height: 1.2;
   }
-  
+
   .summary-label {
     font-size: 0.8rem;
   }
-  
+
   .summary-value {
     font-size: 1.2rem;
   }
-  
+
   .note-histogram h3 {
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
   }
-  
+
   /* Histogram - Split into multiple rows on mobile */
   .histogram-container {
     display: grid;
@@ -803,7 +802,7 @@
     overflow-x: hidden !important;
     box-sizing: border-box !important;
   }
-  
+
   .histogram-bar {
     display: flex;
     flex-direction: column;
@@ -813,7 +812,7 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .bar-container {
     width: 100% !important;
     max-width: 100% !important;
@@ -824,14 +823,14 @@
     align-items: center;
     gap: 1px;
   }
-  
+
   .bar {
     width: 100% !important;
     max-width: 100% !important;
     min-height: 2px;
     border-radius: 2px;
   }
-  
+
   .bar-label {
     font-size: 0.7rem;
     text-align: center;
@@ -839,14 +838,14 @@
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .bar-stats {
     font-size: 0.6rem;
     text-align: center;
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .analysis-section {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -854,19 +853,19 @@
     max-width: 100% !important;
     overflow-x: hidden !important;
   }
-  
+
   /* Force vertical layout for analysis cards on mobile */
   .analysis-section {
     display: flex !important;
     flex-direction: column !important;
     gap: 1rem !important;
   }
-  
+
   .analysis-card {
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .analysis-card {
     padding: 1rem;
     width: 100% !important;
@@ -874,12 +873,12 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   .analysis-card h3 {
     font-size: 1.1rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .confusion-item {
     flex-direction: row;
     align-items: center;
@@ -889,32 +888,32 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .confusion-details {
     align-items: center;
   }
-  
+
   .confusion-pair {
     gap: 0.3rem;
     display: flex;
     align-items: center;
   }
-  
+
   .actual-note,
   .guessed-note {
     font-size: 0.7rem;
     padding: 0.1rem 0.3rem;
     min-width: 20px;
   }
-  
+
   .confusion-count {
     font-size: 0.8rem;
   }
-  
+
   .confusion-desc {
     font-size: 0.6rem;
   }
-  
+
   .note-item {
     padding: 0.5rem;
     font-size: 0.9rem;
@@ -922,19 +921,19 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .note-name {
     font-size: 0.9rem;
   }
-  
+
   .note-accuracy {
     font-size: 0.8rem;
   }
-  
+
   .note-total {
     font-size: 0.7rem;
   }
-  
+
   .reset-stats-button {
     padding: 12px 20px;
     font-size: 0.9rem;
@@ -951,7 +950,7 @@
     max-width: 100vw !important;
     overflow-x: hidden !important;
   }
-  
+
   .stats-panel {
     padding: 1rem;
     width: 100% !important;
@@ -959,24 +958,24 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   .stats-panel h2 {
     font-size: 1.2rem;
     margin-bottom: 0.75rem;
   }
-  
+
   .summary-card {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   .summary-card h3 {
     font-size: 1.1rem;
     margin-bottom: 0.5rem;
   }
-  
+
   .summary-stats {
     gap: 0.25rem;
     width: 100% !important;
@@ -984,7 +983,7 @@
     overflow-x: hidden !important;
     flex-wrap: wrap;
   }
-  
+
   .summary-item {
     padding: 0.3rem;
     flex: 1;
@@ -992,27 +991,27 @@
     min-width: 70px;
     box-sizing: border-box !important;
   }
-  
+
   .summary-label {
     font-size: 0.7rem;
     word-wrap: break-word;
     white-space: normal;
     line-height: 1.1;
   }
-  
+
   .summary-label {
     font-size: 0.7rem;
   }
-  
+
   .summary-value {
     font-size: 1rem;
   }
-  
+
   .note-histogram h3 {
     font-size: 1.1rem;
     margin-bottom: 0.3rem;
   }
-  
+
   /* Histogram - Even more compact for small screens */
   .histogram-container {
     display: grid !important;
@@ -1024,7 +1023,7 @@
     overflow-x: hidden !important;
     box-sizing: border-box !important;
   }
-  
+
   .histogram-bar {
     display: flex;
     flex-direction: column;
@@ -1034,7 +1033,7 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .bar-container {
     width: 100% !important;
     max-width: 100% !important;
@@ -1045,14 +1044,14 @@
     align-items: center;
     gap: 1px;
   }
-  
+
   .bar {
     width: 100% !important;
     max-width: 100% !important;
     min-height: 2px;
     border-radius: 2px;
   }
-  
+
   .bar-label {
     font-size: 0.6rem;
     text-align: center;
@@ -1060,14 +1059,14 @@
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .bar-stats {
     font-size: 0.5rem;
     text-align: center;
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .analysis-card {
     padding: 0.75rem;
     width: 100% !important;
@@ -1075,41 +1074,41 @@
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
-  
+
   /* Force vertical layout for analysis cards on small mobile */
   .analysis-section {
     display: flex !important;
     flex-direction: column !important;
     gap: 0.75rem !important;
   }
-  
+
   .analysis-card h3 {
     font-size: 1rem;
     margin-bottom: 0.3rem;
   }
-  
+
   .confusion-item {
     padding: 4px 6px;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .actual-note,
   .guessed-note {
     font-size: 0.6rem;
     padding: 0.1rem 0.2rem;
     min-width: 18px;
   }
-  
+
   .confusion-count {
     font-size: 0.7rem;
   }
-  
+
   .confusion-desc {
     font-size: 0.5rem;
   }
-  
+
   .note-item {
     padding: 0.3rem;
     font-size: 0.8rem;
@@ -1117,19 +1116,19 @@
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
-  
+
   .note-name {
     font-size: 0.8rem;
   }
-  
+
   .note-accuracy {
     font-size: 0.7rem;
   }
-  
+
   .note-total {
     font-size: 0.6rem;
   }
-  
+
   .reset-stats-button {
     padding: 10px 16px;
     font-size: 0.8rem;

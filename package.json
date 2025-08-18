@@ -22,13 +22,30 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "format": "prettier --write .",
+    "lint": "eslint src/ --fix",
+    "lint:check": "eslint src/",
+    "type-check": "tsc --noEmit",
+    "dead-code": "npx ts-prune",
+    "unused-deps": "npx depcheck",
+    "code-quality": "npm run format && npm run lint && npm run type-check && npm run dead-code"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
-    ]
+      "react-app/jest",
+      "prettier"
+    ],
+    "plugins": [
+      "prettier",
+      "simple-import-sort"
+    ],
+    "rules": {
+      "prettier/prettier": "error",
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error"
+    }
   },
   "browserslist": {
     "production": [
@@ -43,6 +60,13 @@
     ]
   },
   "devDependencies": {
+    "depcheck": "^1.4.7",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.6.2",
+    "ts-prune": "^0.10.3",
     "vercel": "^44.7.3"
   }
 }

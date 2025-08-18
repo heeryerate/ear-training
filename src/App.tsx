@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import * as Tone from 'tone';
 import './App.css';
-import { Note, NoteStats, ActiveTab } from './types';
-import { transposeProgression } from './data/chordProgressions';
-import { getDiatonicNotes, getNoteDisplayName } from './data/keyCenters';
-import NoteSelector from './components/NoteSelector';
+
+import React, { useEffect, useState } from 'react';
+import * as Tone from 'tone';
+
 import ChordProgressionPanel from './components/ChordProgressionPanel';
 import ExercisePanel from './components/ExercisePanel';
+import NoteSelector from './components/NoteSelector';
+import { transposeProgression } from './data/chordProgressions';
+import { getDiatonicNotes, getNoteDisplayName } from './data/keyCenters';
+import { ActiveTab, Note, NoteStats } from './types';
 
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
-  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set(getDiatonicNotes('C'))); // Default to C major scale
-  
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(
+    new Set(getDiatonicNotes('C'))
+  ); // Default to C major scale
+
   // Ear training exercise state
   const [isExerciseMode, setIsExerciseMode] = useState(false);
   const [currentNote, setCurrentNote] = useState<string | null>(null);
@@ -20,20 +24,36 @@ function App() {
   const [score, setScore] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [feedback, setFeedback] = useState<string>('');
-  
+
   // Stats tracking
   const [activeTab, setActiveTab] = useState<ActiveTab>('exercise');
   const [noteStats, setNoteStats] = useState<Record<string, NoteStats>>({});
-  const [confusionPairs, setConfusionPairs] = useState<Record<string, number>>({});
-  
+  const [confusionPairs, setConfusionPairs] = useState<Record<string, number>>(
+    {}
+  );
+
   // Chord progression and key selection
   const [selectedProgression, setSelectedProgression] = useState('I-IV-V-I');
   const [selectedKey, setSelectedKey] = useState('C');
 
   // Initialize stats for all notes
   useEffect(() => {
-    const initialStats: Record<string, {correct: number, incorrect: number}> = {};
-    const allNoteNames = ['C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'];
+    const initialStats: Record<string, { correct: number; incorrect: number }> =
+      {};
+    const allNoteNames = [
+      'C4',
+      'C#4',
+      'D4',
+      'D#4',
+      'E4',
+      'F4',
+      'F#4',
+      'G4',
+      'G#4',
+      'A4',
+      'A#4',
+      'B4',
+    ];
     allNoteNames.forEach(note => {
       initialStats[note] = { correct: 0, incorrect: 0 };
     });
@@ -44,16 +64,16 @@ function App() {
     // Initialize Tone.js with a piano sampler for realistic piano sounds
     const newPiano = new Tone.Sampler({
       urls: {
-        "C4": "C4.mp3",
-        "D#4": "Ds4.mp3",
-        "F#4": "Fs4.mp3",
+        C4: 'C4.mp3',
+        'D#4': 'Ds4.mp3',
+        'F#4': 'Fs4.mp3',
       },
-      baseUrl: "https://tonejs.github.io/audio/salamander/",
+      baseUrl: 'https://tonejs.github.io/audio/salamander/',
       onload: () => {
-        console.log("Piano samples loaded successfully");
-      }
+        console.log('Piano samples loaded successfully');
+      },
     }).toDestination();
-    
+
     setPiano(newPiano);
 
     return () => {
@@ -61,15 +81,13 @@ function App() {
     };
   }, []);
 
-
-
   // Mobile-friendly audio initialization
   const initializeAudio = async () => {
     try {
       await Tone.start();
       console.log(`Audio context initialized: ${Tone.context.state}`);
     } catch (error) {
-      console.error("Error initializing audio:", error);
+      console.error('Error initializing audio:', error);
     }
   };
 
@@ -77,7 +95,7 @@ function App() {
     if (!piano) return;
 
     setIsPlaying(true);
-    
+
     // Initialize audio for mobile devices
     await initializeAudio();
 
@@ -87,12 +105,14 @@ function App() {
     // Play each chord in sequence with proper timing
     progression.chords.forEach((chord, chordIndex) => {
       const chordStartTime = Tone.now() + chordIndex * 1; // 1 second between each chord
-      
-      console.log(`Playing ${chord.name}: ${chord.notes.join(', ')} at time ${chordStartTime}`);
-      
+
+      console.log(
+        `Playing ${chord.name}: ${chord.notes.join(', ')} at time ${chordStartTime}`
+      );
+
       // Play each note in the chord with small time offsets to avoid conflicts
       chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + (noteIndex * 0.01); // 10ms offset between notes
+        const noteTime = chordStartTime + noteIndex * 0.01; // 10ms offset between notes
         piano.triggerAttackRelease(note, '1n', noteTime);
       });
     });
@@ -103,15 +123,13 @@ function App() {
     }, progression.chords.length * 1000);
   };
 
-
-
   const startEarTrainingExercise = async () => {
     if (!piano || selectedNotes.size === 0) return;
 
     setIsPlaying(true);
     setShowAnswerButtons(false);
     setFeedback('');
-    
+
     // Initialize audio for mobile devices
     await initializeAudio();
 
@@ -121,9 +139,9 @@ function App() {
     // Play each chord in sequence
     progression.chords.forEach((chord, chordIndex) => {
       const chordStartTime = Tone.now() + chordIndex * 1;
-      
+
       chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + (noteIndex * 0.01);
+        const noteTime = chordStartTime + noteIndex * 0.01;
         piano.triggerAttackRelease(note, '1n', noteTime);
       });
     });
@@ -131,21 +149,23 @@ function App() {
     // After chord progression, play the random note
     setTimeout(async () => {
       const selectedNotesArray = Array.from(selectedNotes);
-      const randomNote = selectedNotesArray[Math.floor(Math.random() * selectedNotesArray.length)];
+      const randomNote =
+        selectedNotesArray[
+          Math.floor(Math.random() * selectedNotesArray.length)
+        ];
       setCurrentNote(randomNote);
-      
+
       console.log(`Playing random note for exercise: ${randomNote}`);
-      
+
       // Play the note after a short pause
       piano.triggerAttackRelease(randomNote, '2n');
-      
+
       // Show answer buttons after the note plays
       setTimeout(() => {
         setIsPlaying(false);
         setShowAnswerButtons(true);
         setIsExerciseMode(true);
       }, 1000);
-      
     }, progression.chords.length * 1000); // Wait for chord progression to finish
   };
 
@@ -154,19 +174,19 @@ function App() {
 
     const isCorrect = selectedNote === currentNote;
     setTotalAttempts(prev => prev + 1);
-    
+
     // Update note statistics
     setNoteStats(prev => {
       const newStats = { ...prev };
       if (isCorrect) {
         newStats[currentNote] = {
           ...newStats[currentNote],
-          correct: newStats[currentNote].correct + 1
+          correct: newStats[currentNote].correct + 1,
         };
       } else {
         newStats[currentNote] = {
           ...newStats[currentNote],
-          incorrect: newStats[currentNote].incorrect + 1
+          incorrect: newStats[currentNote].incorrect + 1,
         };
       }
       return newStats;
@@ -177,15 +197,19 @@ function App() {
       const pairKey = `${currentNote}→${selectedNote}`;
       setConfusionPairs(prev => ({
         ...prev,
-        [pairKey]: (prev[pairKey] || 0) + 1
+        [pairKey]: (prev[pairKey] || 0) + 1,
       }));
     }
-    
+
     if (isCorrect) {
       setScore(prev => prev + 1);
-      setFeedback(`✅ Correct! You heard ${getNoteDisplayName(currentNote, selectedKey)}`);
+      setFeedback(
+        `✅ Correct! You heard ${getNoteDisplayName(currentNote, selectedKey)}`
+      );
     } else {
-      setFeedback(`❌ Incorrect. You heard ${getNoteDisplayName(currentNote, selectedKey)}, but selected ${getNoteDisplayName(selectedNote, selectedKey)}`);
+      setFeedback(
+        `❌ Incorrect. You heard ${getNoteDisplayName(currentNote, selectedKey)}, but selected ${getNoteDisplayName(selectedNote, selectedKey)}`
+      );
     }
 
     // Hide answer buttons immediately
@@ -202,7 +226,7 @@ function App() {
     if (!piano || selectedNotes.size === 0) return;
 
     setIsPlaying(true);
-    
+
     // Initialize audio for mobile devices
     await initializeAudio();
 
@@ -212,9 +236,9 @@ function App() {
     // Play each chord in sequence
     progression.chords.forEach((chord, chordIndex) => {
       const chordStartTime = Tone.now() + chordIndex * 1;
-      
+
       chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + (noteIndex * 0.01);
+        const noteTime = chordStartTime + noteIndex * 0.01;
         piano.triggerAttackRelease(note, '1n', noteTime);
       });
     });
@@ -222,20 +246,22 @@ function App() {
     // After chord progression, play the random note
     setTimeout(async () => {
       const selectedNotesArray = Array.from(selectedNotes);
-      const randomNote = selectedNotesArray[Math.floor(Math.random() * selectedNotesArray.length)];
+      const randomNote =
+        selectedNotesArray[
+          Math.floor(Math.random() * selectedNotesArray.length)
+        ];
       setCurrentNote(randomNote);
-      
+
       console.log(`Playing random note for exercise: ${randomNote}`);
-      
+
       // Play the note after a short pause
       piano.triggerAttackRelease(randomNote, '2n');
-      
+
       // Show answer buttons after the note plays
       setTimeout(() => {
         setIsPlaying(false);
         setShowAnswerButtons(true);
       }, 1000);
-      
     }, progression.chords.length * 1000); // Wait for chord progression to finish
   };
 
@@ -247,8 +273,6 @@ function App() {
     setIsPlaying(false);
   };
 
-
-
   const resetScore = () => {
     setScore(0);
     setTotalAttempts(0);
@@ -259,8 +283,22 @@ function App() {
   };
 
   const resetStats = () => {
-    const resetStats: Record<string, {correct: number, incorrect: number}> = {};
-    const allNoteNames = ['C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'];
+    const resetStats: Record<string, { correct: number; incorrect: number }> =
+      {};
+    const allNoteNames = [
+      'C4',
+      'C#4',
+      'D4',
+      'D#4',
+      'E4',
+      'F4',
+      'F#4',
+      'G4',
+      'G#4',
+      'A4',
+      'A#4',
+      'B4',
+    ];
     allNoteNames.forEach(note => {
       resetStats[note] = { correct: 0, incorrect: 0 };
     });
@@ -269,7 +307,14 @@ function App() {
   };
 
   // Get most common confusion pairs
-  const getTopConfusionPairs = (limit: number = 10): Array<{ pair: string, actualNote: string, guessedNote: string, count: number }> => {
+  const getTopConfusionPairs = (
+    limit: number = 10
+  ): Array<{
+    pair: string;
+    actualNote: string;
+    guessedNote: string;
+    count: number;
+  }> => {
     return Object.entries(confusionPairs)
       .map(([pair, count]) => {
         const [actualNote, guessedNote] = pair.split('→');
@@ -279,8 +324,6 @@ function App() {
       .slice(0, limit);
   };
 
-
-
   const getStrongestNotes = () => {
     const notesWithData = Object.entries(noteStats)
       .filter(([_, stats]) => stats.correct + stats.incorrect > 0)
@@ -288,7 +331,7 @@ function App() {
         note,
         accuracy: stats.correct / (stats.correct + stats.incorrect),
         total: stats.correct + stats.incorrect,
-        isPerfect: stats.correct > 0 && stats.incorrect === 0
+        isPerfect: stats.correct > 0 && stats.incorrect === 0,
       }));
 
     // Separate perfect and non-perfect notes
@@ -296,31 +339,38 @@ function App() {
     const nonPerfectNotes = notesWithData.filter(n => !n.isPerfect);
 
     // Sort non-perfect notes by accuracy desc
-    const sortedNonPerfect = nonPerfectNotes.sort((a, b) => b.accuracy - a.accuracy);
+    const sortedNonPerfect = nonPerfectNotes.sort(
+      (a, b) => b.accuracy - a.accuracy
+    );
 
     const result = [];
 
     // If there are perfect notes, group them together as the first item
     if (perfectNotes.length > 0) {
-      const totalPerfectAttempts = perfectNotes.reduce((sum, note) => sum + note.total, 0);
+      const totalPerfectAttempts = perfectNotes.reduce(
+        (sum, note) => sum + note.total,
+        0
+      );
       result.push({
         notes: perfectNotes.map(n => n.note),
         accuracy: 1,
         total: totalPerfectAttempts,
         isPerfect: true,
-        isGroup: true
+        isGroup: true,
       });
     }
 
     // Add individual non-perfect notes (limit total results to 5)
     const remainingSlots = 5 - result.length;
-    result.push(...sortedNonPerfect.slice(0, remainingSlots).map(note => ({
-      notes: [note.note],
-      accuracy: note.accuracy,
-      total: note.total,
-      isPerfect: false,
-      isGroup: false
-    })));
+    result.push(
+      ...sortedNonPerfect.slice(0, remainingSlots).map(note => ({
+        notes: [note.note],
+        accuracy: note.accuracy,
+        total: note.total,
+        isPerfect: false,
+        isGroup: false,
+      }))
+    );
 
     return result;
   };
@@ -345,19 +395,21 @@ function App() {
   // Function to repeat the current note (with chord progression context)
   const repeatCurrentNote = async () => {
     if (!piano || !currentNote || isPlaying) return;
-    
+
     setIsPlaying(true);
     await initializeAudio();
-    
-    console.log(`Repeating note with chord progression context: ${currentNote}`);
-    
+
+    console.log(
+      `Repeating note with chord progression context: ${currentNote}`
+    );
+
     // Play the chord progression first (same as in exercise)
     const progression = transposeProgression(selectedProgression, selectedKey);
     progression.chords.forEach((chord, chordIndex) => {
       const chordStartTime = Tone.now() + chordIndex * 1; // 1 second between each chord
-      
+
       chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + (noteIndex * 0.01); // 10ms offset between notes
+        const noteTime = chordStartTime + noteIndex * 0.01; // 10ms offset between notes
         piano.triggerAttackRelease(note, '1n', noteTime);
       });
     });
@@ -365,7 +417,7 @@ function App() {
     // Play the current note after the chord progression
     setTimeout(() => {
       piano.triggerAttackRelease(currentNote, '2n');
-      
+
       // Reset playing state after note duration
       setTimeout(() => {
         setIsPlaying(false);
@@ -386,8 +438,6 @@ function App() {
     };
   }, [showAnswerButtons]);
 
-
-
   const allNotes: Note[] = [
     { note: 'C4', name: 'C' },
     { note: 'C#4', name: 'C#' },
@@ -400,7 +450,7 @@ function App() {
     { note: 'G#4', name: 'G#' },
     { note: 'A4', name: 'A' },
     { note: 'A#4', name: 'A#' },
-    { note: 'B4', name: 'B' }
+    { note: 'B4', name: 'B' },
   ];
 
   return (
@@ -412,26 +462,26 @@ function App() {
 
         {/* Tab Navigation */}
         <div className="tab-navigation">
-          <button 
+          <button
             className={`tab-button mobile-only ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
             ⚙️ Settings
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'exercise' ? 'active' : ''}`}
             onClick={() => setActiveTab('exercise')}
           >
             🎯 Exercise
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
             onClick={() => setActiveTab('stats')}
           >
             📊 Statistics
           </button>
         </div>
-        
+
         {activeTab === 'exercise' ? (
           <div className="panels-container">
             {/* Desktop: Side-by-side layout */}
@@ -479,8 +529,10 @@ function App() {
           <div className="settings-container">
             <div className="settings-panel">
               <h2>⚙️ Exercise Settings</h2>
-              <p>Configure your note selection and chord progression preferences.</p>
-              
+              <p>
+                Configure your note selection and chord progression preferences.
+              </p>
+
               <NoteSelector
                 allNotes={allNotes}
                 selectedNotes={selectedNotes}
@@ -522,7 +574,10 @@ function App() {
                     <div className="summary-item">
                       <span className="summary-label">Overall Accuracy</span>
                       <span className="summary-value">
-                        {totalAttempts > 0 ? Math.round((score / totalAttempts) * 100) : 0}%
+                        {totalAttempts > 0
+                          ? Math.round((score / totalAttempts) * 100)
+                          : 0}
+                        %
                       </span>
                     </div>
                   </div>
@@ -536,28 +591,43 @@ function App() {
                   {allNotes.map(({ note, name }) => {
                     const stats = noteStats[note];
                     const total = stats.correct + stats.incorrect;
-                    const accuracy = total > 0 ? (stats.correct / total) * 100 : 0;
+                    const accuracy =
+                      total > 0 ? (stats.correct / total) * 100 : 0;
                     const maxHeight = 100;
-                    const correctHeight = total > 0 ? Math.max((stats.correct / Math.max(total, 10)) * maxHeight, 2) : 0;
-                    const incorrectHeight = total > 0 ? Math.max((stats.incorrect / Math.max(total, 10)) * maxHeight, 2) : 0;
+                    const correctHeight =
+                      total > 0
+                        ? Math.max(
+                            (stats.correct / Math.max(total, 10)) * maxHeight,
+                            2
+                          )
+                        : 0;
+                    const incorrectHeight =
+                      total > 0
+                        ? Math.max(
+                            (stats.incorrect / Math.max(total, 10)) * maxHeight,
+                            2
+                          )
+                        : 0;
 
                     return (
                       <div key={note} className="histogram-bar">
                         <div className="bar-container">
-                          <div 
-                            className="bar correct-bar" 
+                          <div
+                            className="bar correct-bar"
                             style={{ height: `${correctHeight}px` }}
                             title={`Correct: ${stats.correct}`}
                           />
-                          <div 
-                            className="bar incorrect-bar" 
+                          <div
+                            className="bar incorrect-bar"
                             style={{ height: `${incorrectHeight}px` }}
                             title={`Incorrect: ${stats.incorrect}`}
                           />
                         </div>
                         <div className="bar-label">{name}</div>
                         <div className="bar-stats">
-                          <div className="accuracy">{total > 0 ? Math.round(accuracy) : 0}%</div>
+                          <div className="accuracy">
+                            {total > 0 ? Math.round(accuracy) : 0}%
+                          </div>
                           <div className="attempts">({total})</div>
                         </div>
                       </div>
@@ -573,21 +643,34 @@ function App() {
                   <div className="note-list">
                     {getStrongestNotes().length > 0 ? (
                       getStrongestNotes().map((item, index) => (
-                        <div key={item.isGroup ? 'perfect-group' : item.notes[0]} className={`note-item ${item.isPerfect ? 'perfect' : 'strong'}`}>
+                        <div
+                          key={item.isGroup ? 'perfect-group' : item.notes[0]}
+                          className={`note-item ${item.isPerfect ? 'perfect' : 'strong'}`}
+                        >
                           <span className="note-name">
-                            {item.isGroup 
-                              ? item.notes.map(note => getNoteDisplayName(note, selectedKey)).join(', ')
-                              : getNoteDisplayName(item.notes[0], selectedKey)
-                            }
+                            {item.isGroup
+                              ? item.notes
+                                  .map(note =>
+                                    getNoteDisplayName(note, selectedKey)
+                                  )
+                                  .join(', ')
+                              : getNoteDisplayName(item.notes[0], selectedKey)}
                           </span>
                           <span className="note-accuracy">
-                            {item.isPerfect ? '💯' : `${Math.round(item.accuracy * 100)}%`}
+                            {item.isPerfect
+                              ? '💯'
+                              : `${Math.round(item.accuracy * 100)}%`}
                           </span>
-                          <span className="note-total">({item.total} attempts)</span>
+                          <span className="note-total">
+                            ({item.total} attempts)
+                          </span>
                         </div>
                       ))
                     ) : (
-                      <p className="no-data">No data yet. Start practicing to see your strongest notes!</p>
+                      <p className="no-data">
+                        No data yet. Start practicing to see your strongest
+                        notes!
+                      </p>
                     )}
                   </div>
                 </div>
@@ -596,23 +679,32 @@ function App() {
                   <h3>⚠️ Most Common Confusions</h3>
                   <div className="confusion-list">
                     {getTopConfusionPairs(5).length > 0 ? (
-                      getTopConfusionPairs(5).map(({ pair, actualNote, guessedNote, count }) => (
-                        <div key={pair} className="confusion-item">
-                          <div className="confusion-pair">
-                            <span className="actual-note">{getNoteDisplayName(actualNote, selectedKey)}</span>
-                            <span className="arrow">→</span>
-                            <span className="guessed-note">{getNoteDisplayName(guessedNote, selectedKey)}</span>
+                      getTopConfusionPairs(5).map(
+                        ({ pair, actualNote, guessedNote, count }) => (
+                          <div key={pair} className="confusion-item">
+                            <div className="confusion-pair">
+                              <span className="actual-note">
+                                {getNoteDisplayName(actualNote, selectedKey)}
+                              </span>
+                              <span className="arrow">→</span>
+                              <span className="guessed-note">
+                                {getNoteDisplayName(guessedNote, selectedKey)}
+                              </span>
+                            </div>
+                            <div className="confusion-details">
+                              <span className="confusion-count">{count}x</span>
+                              <span className="confusion-desc">
+                                {count === 1 ? 'confusion' : 'confusions'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="confusion-details">
-                            <span className="confusion-count">{count}x</span>
-                            <span className="confusion-desc">
-                              {count === 1 ? 'confusion' : 'confusions'}
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                        )
+                      )
                     ) : (
-                      <p className="no-data">No confusions yet. Start practicing to identify patterns!</p>
+                      <p className="no-data">
+                        No confusions yet. Start practicing to identify
+                        patterns!
+                      </p>
                     )}
                   </div>
                 </div>
