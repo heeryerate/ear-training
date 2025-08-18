@@ -25,7 +25,7 @@ const Menu: React.FC = () => {
               </div>
             </div>
             <div className="menu-item-content">
-              <h3>Ear Training App</h3>
+              <h3>Ear Training</h3>
               <p>Master musical ear training with interactive exercises</p>
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
@@ -49,7 +49,7 @@ const Menu: React.FC = () => {
               </div>
             </div>
             <div className="menu-item-content">
-              <h3>Scale Practice App</h3>
+              <h3>Scale Practice</h3>
               <p>Master musical scales with interactive practice sessions</p>
               <div className="menu-item-status">
                 <span className="status-badge status-development">
@@ -62,12 +62,75 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-arrow">→</div>
           </Link>
+
+          <Link to="/chord-practice" className="menu-item">
+            <div className="menu-item-thumbnail">
+              <div className="thumbnail-content">
+                <div className="thumbnail-icon">🎸</div>
+                <div className="thumbnail-preview">
+                  <div className="preview-chord">C Major</div>
+                  <div className="preview-voicing">1-3-5</div>
+                  <div className="preview-progression">I-IV-V</div>
+                </div>
+              </div>
+            </div>
+            <div className="menu-item-content">
+              <h3>Chord Practice</h3>
+              <p>
+                Master chord progressions and voicings with interactive practice
+              </p>
+              <div className="menu-item-status">
+                <span className="status-badge status-development">
+                  In Development
+                </span>
+                <span className="status-features">
+                  Major Chords • Minor Chords • Seventh Chords • Progressions
+                </span>
+              </div>
+            </div>
+            <div className="menu-item-arrow">→</div>
+          </Link>
+
+          <Link to="/rhythm-practice" className="menu-item">
+            <div className="menu-item-thumbnail">
+              <div className="thumbnail-content">
+                <div className="thumbnail-icon">🥁</div>
+                <div className="thumbnail-preview">
+                  <div className="preview-beat">4/4 Time</div>
+                  <div className="preview-pattern">♩ ♩ ♩ ♩</div>
+                  <div className="preview-tempo">120 BPM</div>
+                </div>
+              </div>
+            </div>
+            <div className="menu-item-content">
+              <h3>Rhythm Practice</h3>
+              <p>Master rhythm patterns and timing with interactive practice</p>
+              <div className="menu-item-status">
+                <span className="status-badge status-development">
+                  In Development
+                </span>
+                <span className="status-features">
+                  Basic Beats • Time Signatures • Syncopation • Groove Training
+                </span>
+              </div>
+            </div>
+            <div className="menu-item-arrow">→</div>
+          </Link>
         </div>
 
         <div className="menu-footer">
           <div className="footer-content">
             <div className="footer-icon">🚀</div>
             <p>More apps coming soon...</p>
+          </div>
+
+          <div className="footer-bottom">
+            <p className="footer-inline">
+              &copy; 2025 GaleTone. All rights reserved. ·{' '}
+              <a href="mailto:gale051108@gmail.com" className="email-link">
+                Contact me
+              </a>
+            </p>
           </div>
         </div>
       </div>
