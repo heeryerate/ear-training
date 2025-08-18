@@ -7,25 +7,16 @@ const Menu: React.FC = () => {
   return (
     <div className="menu-container">
       <div className="menu-content">
-        <h1 className="menu-title">🎵 Galetone Apps</h1>
+        <h1 className="menu-title">🎵 GaleTone Apps</h1>
         <p className="menu-description">
-          Welcome to the Galetone application suite. Choose an app to get
-          started.
+          Welcome! Choose an app to get started.
         </p>
 
         <div className="menu-items">
           <Link to="/ear-training" className="menu-item">
             <div className="menu-item-icon">🎼</div>
             <div className="menu-item-content">
-              <h3>Ear Training App</h3>
-              <p>
-                Master musical ear training with interactive exercises for note
-                recognition, chord progressions, and more.
-              </p>
-              <div className="menu-item-features">
-                • Note Recognition • Chord Progressions • Progress Tracking •
-                Mobile-Friendly
-              </div>
+              <h3>Ear Training on Key Center</h3>
             </div>
             <div className="menu-item-arrow">→</div>
           </Link>

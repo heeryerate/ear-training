@@ -455,11 +455,16 @@ function EarTrainingApp() {
   return (
     <div className="App">
       <header className="App-header">
+        {/* Navigation Bar */}
+        <div className="nav-bar">
+          <div className="nav-spacer"></div>
+          <Link to="/" className="return-button">
+            ← Back to Home
+          </Link>
+        </div>
+
         <div className="hero-section">
           <div className="hero-header">
-            <Link to="/" className="return-button">
-              ← Back to Home
-            </Link>
             <h1>🎵 Ear Training Key Center</h1>
           </div>
         </div>
