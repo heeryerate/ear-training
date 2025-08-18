@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
 import { transposeProgression } from '../data/chordProgressions';
@@ -455,7 +456,12 @@ function EarTrainingApp() {
     <div className="App">
       <header className="App-header">
         <div className="hero-section">
-          <h1>🎵 Ear Training Key Center</h1>
+          <div className="hero-header">
+            <Link to="/" className="return-button">
+              ← Back to Home
+            </Link>
+            <h1>🎵 Ear Training Key Center</h1>
+          </div>
         </div>
 
         {/* Tab Navigation */}
