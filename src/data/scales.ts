@@ -24,7 +24,9 @@ export type ScaleType =
   | 'whole-tone'
   | 'altered'
   | 'harmonic-minor'
-  | 'melodic-minor';
+  | 'melodic-minor'
+  | 'lydian-dominant'
+  | 'mixolydian-flat6';
 
 export interface Scale {
   name: string;
@@ -82,6 +84,24 @@ const getLocrianNotes = (key: string): string[] => {
   if (!keyCenter) return getDiatonicNotes('C');
   const tonic = keyCenter.tonic;
   const intervals = [0, 1, 3, 5, 6, 8, 10]; // Locrian mode
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Lydian Dominant (4th mode of melodic minor): intervals [0, 2, 4, 6, 7, 9, 10]
+const getLydianDominantNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 2, 4, 6, 7, 9, 10]; // Lydian Dominant
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Mixolydian ♭6 (5th mode of melodic minor): intervals [0, 2, 4, 5, 7, 8, 10]
+const getMixolydianFlat6Notes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 2, 4, 5, 7, 8, 10]; // Mixolydian ♭6
   return intervals.map(interval => transposeNote(tonic, interval));
 };
 
@@ -237,6 +257,10 @@ export const getScaleNotes = (key: string, scaleType: ScaleType): string[] => {
       return getHarmonicMinorNotes(key);
     case 'melodic-minor':
       return getMelodicMinorNotes(key);
+    case 'lydian-dominant':
+      return getLydianDominantNotes(key);
+    case 'mixolydian-flat6':
+      return getMixolydianFlat6Notes(key);
     default:
       return getMajorScaleNotes(key);
   }
@@ -259,6 +283,8 @@ const getKeyContextForScale = (key: string, scaleType: ScaleType): string => {
     'diminished', // Has b3, b5, b6
     'whole-tone', // Symmetric scale, but flats are more common
     'altered', // Has b2, b3, b5, b6, b7
+    'lydian-dominant', // Has b7
+    'mixolydian-flat6', // Has b6, b7
   ];
 
   // If scale doesn't prefer flats, use the actual key
@@ -414,6 +440,8 @@ export const getScaleName = (key: string, scaleType: ScaleType): string => {
     altered: 'Altered',
     'harmonic-minor': 'Harmonic Minor',
     'melodic-minor': 'Melodic Minor',
+    'lydian-dominant': 'Lydian Dominant',
+    'mixolydian-flat6': 'Mixolydian ♭6',
   };
   return `${key} ${scaleTypeNames[scaleType]}`;
 };
@@ -439,6 +467,8 @@ export const getAvailableScaleTypes = (): ScaleType[] => {
     'altered',
     'harmonic-minor',
     'melodic-minor',
+    'lydian-dominant',
+    'mixolydian-flat6',
   ];
 };
 
@@ -463,6 +493,79 @@ export const getScaleDisplayName = (scaleType: ScaleType): string => {
     altered: 'Altered',
     'harmonic-minor': 'Harmonic Minor',
     'melodic-minor': 'Melodic Minor',
+    'lydian-dominant': 'Lydian Dominant',
+    'mixolydian-flat6': 'Mixolydian ♭6',
   };
   return scaleTypeNames[scaleType];
+};
+
+// Scale category type
+export type ScaleCategory =
+  | 'tonic-major'
+  | 'tonic-minor'
+  | 'dominant'
+  | 'symmetrical-outside-colors';
+
+// Get scale category based on musical function
+export const getScaleCategory = (scaleType: ScaleType): ScaleCategory => {
+  // Tonic Major: scales that work over major tonality
+  const tonicMajorScales: ScaleType[] = [
+    'major',
+    'lydian',
+    'pentatonic-major',
+    'major-blues',
+    'major-bebop',
+  ];
+
+  // Tonic Minor: scales that work over minor tonality
+  const tonicMinorScales: ScaleType[] = [
+    'minor',
+    'dorian',
+    'phrygian',
+    'pentatonic-minor',
+    'minor-blues',
+    'harmonic-minor',
+    'melodic-minor',
+    'locrian',
+  ];
+
+  // Dominant: scales that work over dominant chords
+  const dominantScales: ScaleType[] = [
+    'mixolydian',
+    'dominant-bebop',
+    'altered',
+    'lydian-dominant',
+    'mixolydian-flat6',
+  ];
+
+  // Symmetrical / Outside Colors: symmetric scales and outside sounds
+  const symmetricalScales: ScaleType[] = ['diminished', 'whole-tone'];
+
+  if (tonicMajorScales.includes(scaleType)) return 'tonic-major';
+  if (tonicMinorScales.includes(scaleType)) return 'tonic-minor';
+  if (dominantScales.includes(scaleType)) return 'dominant';
+  if (symmetricalScales.includes(scaleType))
+    return 'symmetrical-outside-colors';
+  return 'tonic-major'; // Default fallback
+};
+
+// Get all available scale types grouped by category
+export const getScaleTypesByCategory = (): Record<
+  ScaleCategory,
+  ScaleType[]
+> => {
+  const allTypes = getAvailableScaleTypes();
+  const grouped: Record<ScaleCategory, ScaleType[]> = {
+    'tonic-major': [],
+    'tonic-minor': [],
+    dominant: [],
+    'symmetrical-outside-colors': [],
+  };
+
+  allTypes.forEach(type => {
+    const category = getScaleCategory(type);
+    grouped[category].push(type);
+  });
+
+  return grouped;
 };

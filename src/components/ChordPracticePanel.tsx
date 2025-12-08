@@ -1,0 +1,134 @@
+import React from 'react';
+
+import {
+  ChordType,
+  getChordName,
+  getChordNoteDisplayNames,
+} from '../data/chords';
+
+interface ChordPracticePanelProps {
+  currentKey: string | null;
+  currentChordType: ChordType | null;
+  isPracticeMode: boolean;
+  isPlaying: boolean;
+  currentPlayingNoteIndex: number | null;
+  onStartPractice: () => void;
+  onStopPractice: () => void;
+  onRepeatChord: () => void;
+  onNextChord: () => void;
+  selectedKeys: Set<string>;
+  selectedChords: Set<ChordType>;
+}
+
+const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
+  currentKey,
+  currentChordType,
+  isPracticeMode,
+  isPlaying,
+  currentPlayingNoteIndex,
+  onStartPractice,
+  onStopPractice,
+  onRepeatChord,
+  onNextChord,
+  selectedKeys,
+  selectedChords,
+}) => {
+  const chordName =
+    currentKey && currentChordType
+      ? getChordName(currentKey, currentChordType)
+      : '';
+  const chordNoteNames =
+    currentKey && currentChordType
+      ? getChordNoteDisplayNames(currentKey, currentChordType)
+      : [];
+
+  return (
+    <div className="chord-practice-panel">
+      <h2>🎵 Chord Practice</h2>
+
+      {/* Current Chord Display - Only show when practice is active */}
+      {isPracticeMode && currentKey && currentChordType && (
+        <div className="current-chord-display">
+          <div className="chord-name-large">{chordName}</div>
+          <div className="chord-notes-display">
+            {chordNoteNames.map((noteName, index) => {
+              // -1 means all notes are playing (full chord)
+              // Otherwise, highlight the specific note index
+              const isPlayingNote =
+                currentPlayingNoteIndex === -1 ||
+                currentPlayingNoteIndex === index;
+              return (
+                <span
+                  key={index}
+                  className={`chord-note-display ${isPlayingNote ? 'playing' : ''}`}
+                >
+                  {noteName}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Practice Controls */}
+      <div className="practice-controls">
+        {!isPracticeMode ? (
+          <button
+            className="control-button start-button"
+            onClick={onStartPractice}
+            disabled={
+              selectedKeys.size === 0 || selectedChords.size === 0 || isPlaying
+            }
+          >
+            {isPlaying ? '▶ Playing...' : '▶ Start Practice'}
+          </button>
+        ) : (
+          <div className="practice-controls-row">
+            <button
+              className="control-button stop-button"
+              onClick={onStopPractice}
+              disabled={isPlaying}
+            >
+              ⏹ Stop
+            </button>
+            <button
+              className="control-button repeat-button"
+              onClick={onRepeatChord}
+              disabled={isPlaying || !currentKey || !currentChordType}
+            >
+              ↻ Repeat
+            </button>
+            <button
+              className="control-button next-button"
+              onClick={onNextChord}
+              disabled={
+                isPlaying ||
+                selectedKeys.size === 0 ||
+                selectedChords.size === 0
+              }
+            >
+              ⏭ Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Help Text */}
+      {!isPracticeMode && (
+        <div className="help-text">
+          {selectedKeys.size === 0 && selectedChords.size === 0 && (
+            <p>Select at least one key and one chord to start practicing.</p>
+          )}
+          {selectedKeys.size === 0 && selectedChords.size > 0 && (
+            <p>Select at least one key to start practicing.</p>
+          )}
+          {selectedKeys.size > 0 && selectedChords.size === 0 && (
+            <p>Select at least one chord to start practicing.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ChordPracticePanel;

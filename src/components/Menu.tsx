@@ -26,11 +26,11 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-content">
               <h3>Ear Training</h3>
-              <p>Master musical ear training with interactive exercises</p>
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Note Recognition • Chord Progressions • Progress Tracking
+                  Note Recognition • Key Center Context • Chord Progressions •
+                  Statistics & Analytics
                 </span>
               </div>
             </div>
@@ -50,12 +50,11 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-content">
               <h3>Scale Practice</h3>
-              <p>Master musical scales with interactive practice sessions</p>
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  18 Scale Types • All 12 Keys • Visual Feedback • Progress
-                  Tracking
+                  20 Scale Types • 4 Scale Categories • All 12 Keys • Note
+                  Highlighting • Progress Tracking
                 </span>
               </div>
             </div>
@@ -75,15 +74,11 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-content">
               <h3>Chord Practice</h3>
-              <p>
-                Master chord progressions and voicings with interactive practice
-              </p>
               <div className="menu-item-status">
-                <span className="status-badge status-development">
-                  In Development
-                </span>
+                <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Major Chords • Minor Chords • Seventh Chords • Progressions
+                  22 Chord Types • 4 Chord Families • All 12 Keys • Note
+                  Highlighting • Progress Tracking
                 </span>
               </div>
             </div>
@@ -103,7 +98,6 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-content">
               <h3>Rhythm Practice</h3>
-              <p>Master rhythm patterns and timing with interactive practice</p>
               <div className="menu-item-status">
                 <span className="status-badge status-development">
                   In Development
