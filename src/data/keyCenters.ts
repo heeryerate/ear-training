@@ -275,10 +275,18 @@ const chromaticNoteMapping: { [key: string]: { [note: string]: string } } = {
 // Get the correct display name for a note in a given key context
 export const getNoteDisplayName = (note: string, key: string): string => {
   const keyMapping = chromaticNoteMapping[key];
-  if (keyMapping && keyMapping[note]) {
-    return keyMapping[note];
+  if (!keyMapping) {
+    // Fallback: remove octave number and return note name
+    return note.replace(/\d+$/, '');
   }
 
-  // Fallback to original note name without octave
-  return note.replace('4', '');
+  // Normalize note to octave 4 for lookup (mapping only has octave 4)
+  const normalizedNote = note.replace(/\d+$/, '4');
+
+  if (keyMapping[normalizedNote]) {
+    return keyMapping[normalizedNote];
+  }
+
+  // Fallback: remove octave number and return note name
+  return note.replace(/\d+$/, '');
 };

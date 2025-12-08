@@ -9,7 +9,6 @@ interface ChordProgressionPanelProps {
   selectedKey: string;
   onProgressionChange: (progression: string) => void;
   onKeyChange: (key: string) => void;
-  onPlayProgression: () => void;
   isPlaying: boolean;
   disabled: boolean;
 }
@@ -19,7 +18,6 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
   selectedKey,
   onProgressionChange,
   onKeyChange,
-  onPlayProgression,
   isPlaying,
   disabled,
 }) => {
@@ -62,14 +60,6 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
           ))}
         </div>
       </div>
-
-      <button
-        className="play-button"
-        onClick={onPlayProgression}
-        disabled={isPlaying}
-      >
-        {isPlaying ? 'Playing...' : '▶ Play Progression'}
-      </button>
     </div>
   );
 };

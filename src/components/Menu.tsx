@@ -52,11 +52,10 @@ const Menu: React.FC = () => {
               <h3>Scale Practice</h3>
               <p>Master musical scales with interactive practice sessions</p>
               <div className="menu-item-status">
-                <span className="status-badge status-development">
-                  In Development
-                </span>
+                <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Major Scales • Minor Scales • Pentatonic • Metronome
+                  18 Scale Types • All 12 Keys • Visual Feedback • Progress
+                  Tracking
                 </span>
               </div>
             </div>

@@ -35,6 +35,15 @@ function EarTrainingApp() {
   const [selectedProgression, setSelectedProgression] = useState('I-IV-V-I');
   const [selectedKey, setSelectedKey] = useState('C');
 
+  // Handle progression change and auto-play
+  const handleProgressionChange = async (progression: string) => {
+    setSelectedProgression(progression);
+    // Auto-play the progression when changed
+    if (piano && !isPlaying) {
+      await playChordProgression(progression, selectedKey);
+    }
+  };
+
   // Initialize stats for all notes
   useEffect(() => {
     const initialStats: Record<string, { correct: number; incorrect: number }> =
@@ -90,7 +99,10 @@ function EarTrainingApp() {
     }
   };
 
-  const playChordProgression = async () => {
+  const playChordProgression = async (
+    progressionOverride?: string,
+    keyOverride?: string
+  ) => {
     if (!piano) return;
 
     setIsPlaying(true);
@@ -99,7 +111,10 @@ function EarTrainingApp() {
     await initializeAudio();
 
     // Get the transposed chord progression
-    const progression = transposeProgression(selectedProgression, selectedKey);
+    const progression = transposeProgression(
+      progressionOverride || selectedProgression,
+      keyOverride || selectedKey
+    );
 
     // Play each chord in sequence with proper timing
     progression.chords.forEach((chord, chordIndex) => {
@@ -506,9 +521,8 @@ function EarTrainingApp() {
               <ChordProgressionPanel
                 selectedProgression={selectedProgression}
                 selectedKey={selectedKey}
-                onProgressionChange={setSelectedProgression}
+                onProgressionChange={handleProgressionChange}
                 onKeyChange={handleKeyChange}
-                onPlayProgression={playChordProgression}
                 isPlaying={isPlaying}
                 disabled={isExerciseMode}
               />
@@ -553,9 +567,8 @@ function EarTrainingApp() {
               <ChordProgressionPanel
                 selectedProgression={selectedProgression}
                 selectedKey={selectedKey}
-                onProgressionChange={setSelectedProgression}
+                onProgressionChange={handleProgressionChange}
                 onKeyChange={handleKeyChange}
-                onPlayProgression={playChordProgression}
                 isPlaying={isPlaying}
                 disabled={isExerciseMode}
               />
