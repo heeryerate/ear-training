@@ -5,8 +5,8 @@ import { Route, Routes } from 'react-router-dom';
 
 import ChordPracticeApp from './components/ChordPracticeApp';
 import EarTrainingApp from './components/EarTrainingApp';
+import GroovePracticeApp from './components/GroovePracticeApp';
 import Menu from './components/Menu';
-import RhythmPracticeApp from './components/RhythmPracticeApp';
 import ScalePracticeApp from './components/ScalePracticeApp';
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
       <Route path="/ear-training" element={<EarTrainingApp />} />
       <Route path="/scale-practice" element={<ScalePracticeApp />} />
       <Route path="/chord-practice" element={<ChordPracticeApp />} />
-      <Route path="/rhythm-practice" element={<RhythmPracticeApp />} />
+      <Route path="/groove-practice" element={<GroovePracticeApp />} />
     </Routes>
   );
 }

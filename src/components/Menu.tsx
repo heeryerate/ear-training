@@ -85,7 +85,7 @@ const Menu: React.FC = () => {
             <div className="menu-item-arrow">→</div>
           </Link>
 
-          <Link to="/rhythm-practice" className="menu-item">
+          <Link to="/groove-practice" className="menu-item">
             <div className="menu-item-thumbnail">
               <div className="thumbnail-content">
                 <div className="thumbnail-icon">🥁</div>
@@ -97,13 +97,12 @@ const Menu: React.FC = () => {
               </div>
             </div>
             <div className="menu-item-content">
-              <h3>Rhythm Practice</h3>
+              <h3>Groove Practice</h3>
               <div className="menu-item-status">
-                <span className="status-badge status-development">
-                  In Development
-                </span>
+                <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Basic Beats • Time Signatures • Syncopation • Groove Training
+                  11 Groove Types • 3 Categories • Realistic Drum Sounds • Swing
+                  Timing • BPM Control • Progress Tracking
                 </span>
               </div>
             </div>
