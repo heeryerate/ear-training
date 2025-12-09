@@ -8,6 +8,7 @@ import EarTrainingApp from './components/EarTrainingApp';
 import GroovePracticeApp from './components/GroovePracticeApp';
 import Menu from './components/Menu';
 import ScalePracticeApp from './components/ScalePracticeApp';
+import SightReadingApp from './components/SightReadingApp';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       <Route path="/scale-practice" element={<ScalePracticeApp />} />
       <Route path="/chord-practice" element={<ChordPracticeApp />} />
       <Route path="/groove-practice" element={<GroovePracticeApp />} />
+      <Route path="/sight-reading" element={<SightReadingApp />} />
     </Routes>
   );
 }

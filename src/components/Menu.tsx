@@ -29,8 +29,7 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Note Recognition • Key Center Context • Chord Progressions •
-                  Statistics & Analytics
+                  Note Recognition • Chord Progressions • Statistics
                 </span>
               </div>
             </div>
@@ -53,8 +52,7 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  20 Scale Types • 4 Scale Categories • All 12 Keys • Note
-                  Highlighting • Progress Tracking
+                  20 Scale Types • All 12 Keys • Progress Tracking
                 </span>
               </div>
             </div>
@@ -77,8 +75,7 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  22 Chord Types • 4 Chord Families • All 12 Keys • Note
-                  Highlighting • Progress Tracking
+                  22 Chord Types • All 12 Keys • Progress Tracking
                 </span>
               </div>
             </div>
@@ -101,8 +98,32 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  11 Groove Types • 3 Categories • Realistic Drum Sounds • Swing
-                  Timing • BPM Control • Progress Tracking
+                  11 Groove Types • Realistic Drums • BPM Control
+                </span>
+              </div>
+            </div>
+            <div className="menu-item-arrow">→</div>
+          </Link>
+
+          <Link to="/sight-reading" className="menu-item">
+            <div className="menu-item-thumbnail">
+              <div className="thumbnail-content">
+                <div className="thumbnail-icon">📖</div>
+                <div className="thumbnail-preview">
+                  <div className="preview-note">𝄞</div>
+                  <div className="preview-staff">♩</div>
+                  <div className="preview-accuracy">85%</div>
+                </div>
+              </div>
+            </div>
+            <div className="menu-item-content">
+              <h3>Sight Reading</h3>
+              <div className="menu-item-status">
+                <span className="status-badge status-development">
+                  In Development
+                </span>
+                <span className="status-features">
+                  Treble & Bass Clef • Staff Notation • All 12 Keys
                 </span>
               </div>
             </div>
