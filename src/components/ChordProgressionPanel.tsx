@@ -50,12 +50,16 @@ const ChordProgressionPanel: React.FC<ChordProgressionPanelProps> = ({
         <div className="progression-buttons">
           {progressions.map(progression => (
             <button
-              key={progression}
+              key={progression || 'empty'}
               className={`progression-button ${selectedProgression === progression ? 'selected' : ''}`}
               onClick={() => onProgressionChange(progression)}
               disabled={disabled || isPlaying}
             >
-              {progression}
+              {progression === ''
+                ? 'None'
+                : progression === 'random'
+                  ? 'Random (all 5)'
+                  : progression}
             </button>
           ))}
         </div>

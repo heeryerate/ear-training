@@ -17,6 +17,8 @@ interface ExercisePanelProps {
   onAnswerSelection: (note: string) => void;
   onResetScore: () => void;
   onRepeatNote: () => void;
+  bpm: number;
+  onBpmChange: (bpm: number) => void;
 }
 
 const ExercisePanel: React.FC<ExercisePanelProps> = ({
@@ -34,6 +36,8 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
   onAnswerSelection,
   onResetScore,
   onRepeatNote,
+  bpm,
+  onBpmChange,
 }) => {
   return (
     <div className="exercise-panel">
@@ -70,6 +74,20 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({
           {feedback}
         </div>
       )}
+
+      {/* BPM Control */}
+      <div className="bpm-control">
+        <label htmlFor="bpm-slider">BPM: {bpm}</label>
+        <input
+          id="bpm-slider"
+          type="range"
+          min="60"
+          max="200"
+          value={bpm}
+          onChange={e => onBpmChange(parseInt(e.target.value))}
+          className="bpm-slider"
+        />
+      </div>
 
       {/* Exercise Controls - Compact Button Row */}
       <div className="exercise-controls-compact">

@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
-import { transposeProgression } from '../data/chordProgressions';
+import {
+  baseProgressions,
+  transposeProgression,
+} from '../data/chordProgressions';
 import { getDiatonicNotes, getNoteDisplayName } from '../data/keyCenters';
 import { ActiveTab, Note, NoteStats } from '../types';
 import ChordProgressionPanel from './ChordProgressionPanel';
@@ -34,12 +37,19 @@ function EarTrainingApp() {
   // Chord progression and key selection
   const [selectedProgression, setSelectedProgression] = useState('I-IV-V-I');
   const [selectedKey, setSelectedKey] = useState('C');
+  const [bpm, setBpm] = useState(120);
 
   // Handle progression change and auto-play
   const handleProgressionChange = async (progression: string) => {
     setSelectedProgression(progression);
-    // Auto-play the progression when changed
-    if (piano && !isPlaying) {
+    // Auto-play the progression when changed (skip if empty or random)
+    if (
+      piano &&
+      !isPlaying &&
+      progression &&
+      progression !== '' &&
+      progression !== 'random'
+    ) {
       await playChordProgression(progression, selectedKey);
     }
   };
@@ -132,6 +142,16 @@ function EarTrainingApp() {
   ) => {
     if (!piano) return;
 
+    const progressionKey = progressionOverride || selectedProgression;
+    // Skip if empty progression or random (random is handled in exercise functions)
+    if (
+      !progressionKey ||
+      progressionKey === '' ||
+      progressionKey === 'random'
+    ) {
+      return;
+    }
+
     setIsPlaying(true);
 
     // Initialize audio for mobile devices
@@ -139,29 +159,36 @@ function EarTrainingApp() {
 
     // Get the transposed chord progression
     const progression = transposeProgression(
-      progressionOverride || selectedProgression,
+      progressionKey,
       keyOverride || selectedKey
     );
 
+    // Calculate time between chords based on BPM (60/BPM seconds per beat)
+    const beatDuration = 60 / bpm; // Duration in seconds
+
     // Play each chord in sequence with proper timing
     progression.chords.forEach((chord, chordIndex) => {
-      const chordStartTime = Tone.now() + chordIndex * 1; // 1 second between each chord
+      const chordStartTime = Tone.now() + chordIndex * beatDuration;
 
       console.log(
         `Playing ${chord.name}: ${chord.notes.join(', ')} at time ${chordStartTime}`
       );
 
       // Play each note in the chord with small time offsets to avoid conflicts
+      // Each chord lasts for one beat (beatDuration)
       chord.notes.forEach((note, noteIndex) => {
         const noteTime = chordStartTime + noteIndex * 0.01; // 10ms offset between notes
-        piano.triggerAttackRelease(note, '1n', noteTime);
+        piano.triggerAttackRelease(note, beatDuration, noteTime);
       });
     });
 
     // Reset playing state after the progression finishes
-    setTimeout(() => {
-      setIsPlaying(false);
-    }, progression.chords.length * 1000);
+    setTimeout(
+      () => {
+        setIsPlaying(false);
+      },
+      progression.chords.length * beatDuration * 1000
+    );
   };
 
   const startEarTrainingExercise = async () => {
@@ -174,20 +201,42 @@ function EarTrainingApp() {
     // Initialize audio for mobile devices
     await initializeAudio();
 
+    // Handle random progression selection
+    let progressionKey = selectedProgression;
+    if (progressionKey === 'random') {
+      // Randomly select from all progressions including empty
+      const allProgressions = ['', ...Object.keys(baseProgressions)];
+      progressionKey =
+        allProgressions[Math.floor(Math.random() * allProgressions.length)];
+    }
+
     // Get the transposed chord progression
-    const progression = transposeProgression(selectedProgression, selectedKey);
+    const progression = transposeProgression(progressionKey, selectedKey);
 
-    // Play each chord in sequence
-    progression.chords.forEach((chord, chordIndex) => {
-      const chordStartTime = Tone.now() + chordIndex * 1;
+    // Check if progression is empty
+    const hasProgression = progression.chords.length > 0;
 
-      chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + noteIndex * 0.01;
-        piano.triggerAttackRelease(note, '1n', noteTime);
+    if (hasProgression) {
+      // Calculate time between chords based on BPM (60/BPM seconds per beat)
+      const beatDuration = 60 / bpm; // Duration in seconds
+
+      // Play each chord in sequence
+      progression.chords.forEach((chord, chordIndex) => {
+        const chordStartTime = Tone.now() + chordIndex * beatDuration;
+
+        // Each chord lasts for one beat (beatDuration)
+        chord.notes.forEach((note, noteIndex) => {
+          const noteTime = chordStartTime + noteIndex * 0.01;
+          piano.triggerAttackRelease(note, beatDuration, noteTime);
+        });
       });
-    });
+    }
 
-    // After chord progression, play the random note
+    // After chord progression (or immediately if no progression), play the random note
+    const progressionDuration = hasProgression
+      ? progression.chords.length * (60 / bpm) * 1000
+      : 0;
+
     setTimeout(async () => {
       const selectedNotesArray = Array.from(selectedNotes);
       const randomNote =
@@ -207,7 +256,7 @@ function EarTrainingApp() {
         setShowAnswerButtons(true);
         setIsExerciseMode(true);
       }, 1000);
-    }, progression.chords.length * 1000); // Wait for chord progression to finish
+    }, progressionDuration); // Wait for chord progression to finish (or 0 if no progression)
   };
 
   const handleAnswerSelection = (selectedNote: string) => {
@@ -271,20 +320,42 @@ function EarTrainingApp() {
     // Initialize audio for mobile devices
     await initializeAudio();
 
+    // Handle random progression selection
+    let progressionKey = selectedProgression;
+    if (progressionKey === 'random') {
+      // Randomly select from all progressions including empty
+      const allProgressions = ['', ...Object.keys(baseProgressions)];
+      progressionKey =
+        allProgressions[Math.floor(Math.random() * allProgressions.length)];
+    }
+
     // Get the transposed chord progression
-    const progression = transposeProgression(selectedProgression, selectedKey);
+    const progression = transposeProgression(progressionKey, selectedKey);
 
-    // Play each chord in sequence
-    progression.chords.forEach((chord, chordIndex) => {
-      const chordStartTime = Tone.now() + chordIndex * 1;
+    // Check if progression is empty
+    const hasProgression = progression.chords.length > 0;
 
-      chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + noteIndex * 0.01;
-        piano.triggerAttackRelease(note, '1n', noteTime);
+    if (hasProgression) {
+      // Calculate time between chords based on BPM (60/BPM seconds per beat)
+      const beatDuration = 60 / bpm; // Duration in seconds
+
+      // Play each chord in sequence
+      progression.chords.forEach((chord, chordIndex) => {
+        const chordStartTime = Tone.now() + chordIndex * beatDuration;
+
+        // Each chord lasts for one beat (beatDuration)
+        chord.notes.forEach((note, noteIndex) => {
+          const noteTime = chordStartTime + noteIndex * 0.01;
+          piano.triggerAttackRelease(note, beatDuration, noteTime);
+        });
       });
-    });
+    }
 
-    // After chord progression, play the random note
+    // After chord progression (or immediately if no progression), play the random note
+    const progressionDuration = hasProgression
+      ? progression.chords.length * (60 / bpm) * 1000
+      : 0;
+
     setTimeout(async () => {
       const selectedNotesArray = Array.from(selectedNotes);
       const randomNote =
@@ -303,7 +374,7 @@ function EarTrainingApp() {
         setIsPlaying(false);
         setShowAnswerButtons(true);
       }, 1000);
-    }, progression.chords.length * 1000); // Wait for chord progression to finish
+    }, progressionDuration); // Wait for chord progression to finish (or 0 if no progression)
   };
 
   const stopExercise = () => {
@@ -444,18 +515,39 @@ function EarTrainingApp() {
       `Repeating note with chord progression context: ${currentNote}`
     );
 
-    // Play the chord progression first (same as in exercise)
-    const progression = transposeProgression(selectedProgression, selectedKey);
-    progression.chords.forEach((chord, chordIndex) => {
-      const chordStartTime = Tone.now() + chordIndex * 1; // 1 second between each chord
+    // Handle random progression selection
+    let progressionKey = selectedProgression;
+    if (progressionKey === 'random') {
+      // Randomly select from all progressions including empty
+      const allProgressions = ['', ...Object.keys(baseProgressions)];
+      progressionKey =
+        allProgressions[Math.floor(Math.random() * allProgressions.length)];
+    }
 
-      chord.notes.forEach((note, noteIndex) => {
-        const noteTime = chordStartTime + noteIndex * 0.01; // 10ms offset between notes
-        piano.triggerAttackRelease(note, '1n', noteTime);
+    // Play the chord progression first (same as in exercise) - skip if empty
+    const progression = transposeProgression(progressionKey, selectedKey);
+    const hasProgression = progression.chords.length > 0;
+
+    if (hasProgression) {
+      // Calculate time between chords based on BPM (60/BPM seconds per beat)
+      const beatDuration = 60 / bpm; // Duration in seconds
+
+      progression.chords.forEach((chord, chordIndex) => {
+        const chordStartTime = Tone.now() + chordIndex * beatDuration;
+
+        // Each chord lasts for one beat (beatDuration)
+        chord.notes.forEach((note, noteIndex) => {
+          const noteTime = chordStartTime + noteIndex * 0.01; // 10ms offset between notes
+          piano.triggerAttackRelease(note, beatDuration, noteTime);
+        });
       });
-    });
+    }
 
-    // Play the current note after the chord progression
+    // Play the current note after the chord progression (or immediately if no progression)
+    const progressionDuration = hasProgression
+      ? progression.chords.length * (60 / bpm) * 1000
+      : 0;
+
     setTimeout(() => {
       piano.triggerAttackRelease(currentNote, '2n');
 
@@ -463,7 +555,7 @@ function EarTrainingApp() {
       setTimeout(() => {
         setIsPlaying(false);
       }, 1000);
-    }, progression.chords.length * 1000); // Wait for chord progression to finish
+    }, progressionDuration); // Wait for chord progression to finish (or 0 if no progression)
   };
 
   // Mobile-specific: Add body padding when answer section is visible
@@ -572,6 +664,8 @@ function EarTrainingApp() {
                 onAnswerSelection={handleAnswerSelection}
                 onResetScore={resetScore}
                 onRepeatNote={repeatCurrentNote}
+                bpm={bpm}
+                onBpmChange={setBpm}
               />
             </div>
           </div>

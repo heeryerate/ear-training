@@ -71,6 +71,15 @@ export const transposeProgression = (
   progressionKey: string,
   targetKey: string
 ): ChordProgression => {
+  // Handle empty progression (no chords)
+  if (!progressionKey || progressionKey === '') {
+    return {
+      name: 'No Progression',
+      description: 'No chord progression',
+      chords: [],
+    };
+  }
+
   const baseProgression = baseProgressions[progressionKey];
   if (!baseProgression)
     throw new Error(`Unknown progression: ${progressionKey}`);
@@ -88,7 +97,7 @@ export const transposeProgression = (
 };
 
 export const getAvailableProgressions = (): string[] => {
-  return Object.keys(baseProgressions);
+  return ['', 'random', ...Object.keys(baseProgressions)]; // Empty string = "no progression", 'random' = random selection
 };
 
 export { baseProgressions };

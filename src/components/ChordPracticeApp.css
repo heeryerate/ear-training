@@ -693,6 +693,13 @@
 }
 
 /* Mobile responsiveness */
+@media (max-width: 1024px) {
+  /* Hide keyboard shortcuts on mobile devices (iPhone/iPad) */
+  .key-indicator {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .key-buttons {
     grid-template-columns: repeat(4, 1fr);
