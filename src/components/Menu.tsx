@@ -118,9 +118,20 @@ const Menu: React.FC = () => {
 
           <div className="footer-bottom">
             <p className="footer-inline">
-              &copy; 2025 GaleTone. All rights reserved. ·{' '}
+              &copy; 2025 GaleTone. All rights reserved.
+            </p>
+            <p className="footer-inline">
               <a href="mailto:gale051108@gmail.com" className="email-link">
                 Contact me
+              </a>
+              {' · '}
+              <a
+                href="https://buymeacoffee.com/gale051108x"
+                className="coffee-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ☕ Buy me a coffee
               </a>
             </p>
           </div>

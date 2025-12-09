@@ -18,6 +18,8 @@ interface ChordPracticePanelProps {
   onNextChord: () => void;
   selectedKeys: Set<string>;
   selectedChords: Set<ChordType>;
+  bpm: number;
+  onBpmChange: (bpm: number) => void;
 }
 
 const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
@@ -32,6 +34,8 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
   onNextChord,
   selectedKeys,
   selectedChords,
+  bpm,
+  onBpmChange,
 }) => {
   const chordName =
     currentKey && currentChordType
@@ -67,6 +71,22 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* BPM Control - Only show during practice */}
+      {isPracticeMode && (
+        <div className="bpm-control">
+          <label htmlFor="bpm-slider">BPM: {bpm}</label>
+          <input
+            id="bpm-slider"
+            type="range"
+            min="60"
+            max="200"
+            value={bpm}
+            onChange={e => onBpmChange(parseInt(e.target.value))}
+            className="bpm-slider"
+          />
         </div>
       )}
 

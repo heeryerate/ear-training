@@ -15,6 +15,7 @@ function ChordPracticeApp() {
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('practice');
+  const [bpm, setBpm] = useState(120);
 
   // Key and chord selection (multiple selection)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(['C']));
@@ -46,6 +47,17 @@ function ChordPracticeApp() {
 
   // Store timeout IDs for cleanup
   const timeoutRefs = React.useRef<number[]>([]);
+  // Store playback state for BPM adjustment
+  const playbackStateRef = React.useRef<{
+    startTime: number;
+    chordNotes: string[];
+    currentKey: string;
+    currentChordType: ChordType;
+    startBpm: number;
+    playbackId: number;
+  } | null>(null);
+  // Playback ID counter to invalidate old scheduled notes
+  const playbackIdRef = React.useRef<number>(0);
 
   // Clear all pending timeouts
   const clearAllTimeouts = () => {
@@ -57,9 +69,36 @@ function ChordPracticeApp() {
   useEffect(() => {
     const newPiano = new Tone.Sampler({
       urls: {
+        A0: 'A0.mp3',
+        C1: 'C1.mp3',
+        'D#1': 'Ds1.mp3',
+        'F#1': 'Fs1.mp3',
+        A1: 'A1.mp3',
+        C2: 'C2.mp3',
+        'D#2': 'Ds2.mp3',
+        'F#2': 'Fs2.mp3',
+        A2: 'A2.mp3',
+        C3: 'C3.mp3',
+        'D#3': 'Ds3.mp3',
+        'F#3': 'Fs3.mp3',
+        A3: 'A3.mp3',
         C4: 'C4.mp3',
         'D#4': 'Ds4.mp3',
         'F#4': 'Fs4.mp3',
+        A4: 'A4.mp3',
+        C5: 'C5.mp3',
+        'D#5': 'Ds5.mp3',
+        'F#5': 'Fs5.mp3',
+        A5: 'A5.mp3',
+        C6: 'C6.mp3',
+        'D#6': 'Ds6.mp3',
+        'F#6': 'Fs6.mp3',
+        A6: 'A6.mp3',
+        C7: 'C7.mp3',
+        'D#7': 'Ds7.mp3',
+        'F#7': 'Fs7.mp3',
+        A7: 'A7.mp3',
+        C8: 'C8.mp3',
       },
       baseUrl: 'https://tonejs.github.io/audio/salamander/',
       onload: () => {
@@ -131,67 +170,173 @@ function ChordPracticeApp() {
 
     // Use notes that match the display spelling
     const chordNotes = getChordNotesForAudio(key, chordType);
-    const chordDuration = 1.0; // Duration for the full chord
-    const noteGap = 0.4; // Time between when each note starts (overlapping)
+    // Calculate durations based on BPM (quarter note = 60/BPM seconds)
+    const quarterNoteDuration = 60 / bpm;
+    const chordDuration = quarterNoteDuration * 2; // 2 quarter notes for full chord
+    const noteGap = quarterNoteDuration * 0.8; // Time between when each note starts (overlapping)
     const noteDuration = noteGap * 1.5; // Each note plays longer to overlap smoothly
     const totalDuration =
       chordDuration + (chordNotes.length - 1) * noteGap + noteDuration;
 
+    // Store playback state for BPM adjustment
+    const playbackStartTime = Date.now();
+    const playbackId = ++playbackIdRef.current; // Increment and get new playback ID
+    playbackStateRef.current = {
+      startTime: playbackStartTime,
+      chordNotes,
+      currentKey: key,
+      currentChordType: chordType,
+      startBpm: bpm,
+      playbackId,
+    };
+
     const startTime = Tone.now();
+    const currentPlaybackId = playbackId; // Capture current playback ID
 
     // Step 1: Play all notes simultaneously (chord)
-    const chordTime = startTime;
+    // Schedule chord to play with a timeout that checks playback ID
+    const chordTimeout = window.setTimeout(() => {
+      // Only play if this is still the current playback
+      if (
+        playbackStateRef.current &&
+        playbackStateRef.current.playbackId === currentPlaybackId &&
+        piano
+      ) {
+        // Highlight all notes when chord starts playing
+        setCurrentPlayingNoteIndex(-1); // -1 indicates all notes are playing
 
-    // Highlight all notes when chord starts playing
-    const chordHighlightTimeout = window.setTimeout(() => {
-      setCurrentPlayingNoteIndex(-1); // -1 indicates all notes are playing
+        // Play the full chord
+        chordNotes.forEach(note => {
+          // Play chord for the full duration (until all individual notes finish)
+          piano.triggerAttackRelease(note, totalDuration * 0.95);
+        });
+      }
     }, 0);
-    timeoutRefs.current.push(chordHighlightTimeout);
-
-    // Play the full chord
-    chordNotes.forEach(note => {
-      // Play chord for the full duration (until all individual notes finish)
-      piano.triggerAttackRelease(note, totalDuration * 0.95, chordTime);
-    });
+    timeoutRefs.current.push(chordTimeout);
 
     // Step 2: After chord duration, play each note individually with highlighting
-    const individualNotesStartTime = chordDuration * 1000;
-
     chordNotes.forEach((note, index) => {
-      const noteStartTime = individualNotesStartTime + index * noteGap * 1000;
+      const noteStartTime = chordDuration * 1000 + index * noteGap * 1000;
 
-      // Highlight this specific note when it starts
+      // Schedule note highlight
       const noteHighlightTimeout = window.setTimeout(() => {
-        setCurrentPlayingNoteIndex(index);
+        // Only update if this is still the current playback
+        if (
+          playbackStateRef.current &&
+          playbackStateRef.current.playbackId === currentPlaybackId
+        ) {
+          setCurrentPlayingNoteIndex(index);
+        }
       }, noteStartTime);
       timeoutRefs.current.push(noteHighlightTimeout);
 
       // Remove highlight when this note ends (or when next note starts, whichever is later)
       const noteEndTime = noteStartTime + noteDuration * 1000;
       const noteUnhighlightTimeout = window.setTimeout(() => {
-        // Only clear if this is the last note
-        if (index === chordNotes.length - 1) {
-          setCurrentPlayingNoteIndex(null);
+        // Only update if this is still the current playback
+        if (
+          playbackStateRef.current &&
+          playbackStateRef.current.playbackId === currentPlaybackId
+        ) {
+          // Only clear if this is the last note
+          if (index === chordNotes.length - 1) {
+            setCurrentPlayingNoteIndex(null);
+          }
         }
       }, noteEndTime);
       timeoutRefs.current.push(noteUnhighlightTimeout);
 
-      // Play individual note - each note overlaps with the next
-      const individualNoteTime = startTime + chordDuration + index * noteGap;
-      piano.triggerAttackRelease(note, noteDuration * 0.95, individualNoteTime);
+      // Schedule individual note to play with a timeout that checks playback ID
+      const noteTimeout = window.setTimeout(() => {
+        // Only play if this is still the current playback
+        if (
+          playbackStateRef.current &&
+          playbackStateRef.current.playbackId === currentPlaybackId &&
+          piano
+        ) {
+          // Play individual note - each note overlaps with the next
+          piano.triggerAttackRelease(note, noteDuration * 0.95);
+        }
+      }, noteStartTime);
+      timeoutRefs.current.push(noteTimeout);
     });
 
     // Return a promise that resolves when playback completes
+    const finishPlaybackId = playbackId; // Capture playback ID for finish callback
     return new Promise<void>(resolve => {
       const finishTimeout = window.setTimeout(() => {
-        setIsPlaying(false);
-        setCurrentPlayingNoteIndex(null);
-        clearAllTimeouts();
-        resolve();
+        // Only resolve if this is still the current playback
+        if (
+          playbackStateRef.current &&
+          playbackStateRef.current.playbackId === finishPlaybackId
+        ) {
+          setIsPlaying(false);
+          setCurrentPlayingNoteIndex(null);
+          clearAllTimeouts();
+          playbackStateRef.current = null;
+          resolve();
+        }
       }, totalDuration * 1000);
       timeoutRefs.current.push(finishTimeout);
     });
   };
+
+  // Handle BPM changes during playback
+  useEffect(() => {
+    if (
+      isPlaying &&
+      playbackStateRef.current &&
+      piano &&
+      bpm !== playbackStateRef.current.startBpm
+    ) {
+      const state = playbackStateRef.current;
+      const elapsedTime = (Date.now() - state.startTime) / 1000; // elapsed in seconds
+      const oldQuarterNoteDuration = 60 / state.startBpm;
+      const oldChordDuration = oldQuarterNoteDuration * 2;
+      const oldNoteGap = oldQuarterNoteDuration * 0.8;
+
+      // Determine which phase we're in (chord or individual notes)
+      let currentNoteIndex = -1; // -1 means chord is playing
+      if (elapsedTime > oldChordDuration) {
+        // We're in the individual notes phase
+        const timeInNotesPhase = elapsedTime - oldChordDuration;
+        currentNoteIndex = Math.floor(timeInNotesPhase / oldNoteGap);
+        currentNoteIndex = Math.min(
+          currentNoteIndex,
+          state.chordNotes.length - 1
+        );
+      }
+
+      // Calculate the next note index to play
+      const nextNoteIndex = currentNoteIndex + 1;
+
+      // Only reschedule if there are remaining notes to play
+      if (nextNoteIndex <= state.chordNotes.length) {
+        // Stop all currently playing notes to prevent overlaps
+        piano.releaseAll();
+
+        // Stop all currently playing notes to prevent overlaps
+        piano.releaseAll();
+
+        // Clear all pending timeouts and scheduled notes
+        clearAllTimeouts();
+
+        // Update playback state with new BPM and new playback ID
+        const newPlaybackId = ++playbackIdRef.current;
+        playbackStateRef.current = {
+          ...state,
+          startBpm: bpm,
+          startTime: Date.now(), // Reset start time for rescheduling
+          playbackId: newPlaybackId,
+        };
+
+        // Reschedule immediately from the next note with new BPM
+        // This will make the next note play at the new speed
+        playChord(state.currentKey, state.currentChordType);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bpm, isPlaying]);
 
   // Start practice session
   const startPractice = async () => {
@@ -265,6 +410,7 @@ function ChordPracticeApp() {
   const stopPractice = () => {
     // Clear all pending timeouts
     clearAllTimeouts();
+    playbackStateRef.current = null;
 
     setIsPracticeMode(false);
     setCurrentKey(null);
@@ -424,6 +570,8 @@ function ChordPracticeApp() {
                 onNextChord={playNextChord}
                 selectedKeys={selectedKeys}
                 selectedChords={selectedChords}
+                bpm={bpm}
+                onBpmChange={setBpm}
               />
             </div>
           </div>

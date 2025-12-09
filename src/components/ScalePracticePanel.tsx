@@ -18,6 +18,8 @@ interface ScalePracticePanelProps {
   onNextScale: () => void;
   selectedKeys: Set<string>;
   selectedScales: Set<ScaleType>;
+  bpm: number;
+  onBpmChange: (bpm: number) => void;
 }
 
 const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
@@ -32,6 +34,8 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
   onNextScale,
   selectedKeys,
   selectedScales,
+  bpm,
+  onBpmChange,
 }) => {
   const scaleName =
     currentKey && currentScaleType
@@ -63,6 +67,22 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* BPM Control - Only show during practice */}
+      {isPracticeMode && (
+        <div className="bpm-control">
+          <label htmlFor="bpm-slider">BPM: {bpm}</label>
+          <input
+            id="bpm-slider"
+            type="range"
+            min="60"
+            max="200"
+            value={bpm}
+            onChange={e => onBpmChange(parseInt(e.target.value))}
+            className="bpm-slider"
+          />
         </div>
       )}
 
