@@ -20,6 +20,8 @@ type ActiveTab = 'practice' | 'progress' | 'settings';
 function ScalePracticeApp() {
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isPlayingForward, setIsPlayingForward] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('practice');
   const [bpm, setBpm] = useState(120);
 
@@ -51,9 +53,97 @@ function ScalePracticeApp() {
   >([]);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
+  // Sync refs with state
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+  useEffect(() => {
+    isPracticeModeRef.current = isPracticeMode;
+  }, [isPracticeMode]);
+  useEffect(() => {
+    currentKeyRef.current = currentKey;
+  }, [currentKey]);
+  useEffect(() => {
+    currentScaleTypeRef.current = currentScaleType;
+  }, [currentScaleType]);
+
+  // Toggle pause/play
+  const togglePause = () => {
+    if (!currentKey || !currentScaleType) return;
+
+    if (isPaused) {
+      // Resume playback
+      setIsPaused(false);
+      // Continue playing from where we left off
+      if (!isPlaying) {
+        // If not playing, start playing the current scale
+        const forward = isPlayingForward;
+        playScale(currentKey, currentScaleType, 0, forward);
+      }
+    } else {
+      // Pause playback
+      setIsPaused(true);
+      // Stop all currently playing notes
+      if (piano) {
+        piano.releaseAll();
+      }
+      // Clear all pending timeouts
+      clearAllTimeouts();
+      setIsPlaying(false);
+      setCurrentPlayingNoteIndex(null);
+    }
+  };
+
+  // Keyboard shortcuts for practice mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle keyboard shortcuts when in practice mode
+      if (!isPracticeMode) return;
+
+      // Don't prevent if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Spacebar: toggle play/pause
+      if (event.key === ' ') {
+        event.preventDefault(); // Prevent page scroll
+        if (currentKey && currentScaleType) {
+          togglePause();
+        }
+      }
+
+      // Enter: go to next scale
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent form submission
+        playNextScale();
+      }
+
+      // Escape: stop practice
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        stopPractice();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+    // Note: togglePause, playNextScale, and stopPractice are intentionally omitted from deps
+    // to avoid recreating the listener on every render. The closure will capture
+    // the latest function references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPracticeMode, currentKey, currentScaleType]);
+
   // Store timeout IDs for cleanup
   const timeoutRefs = React.useRef<number[]>([]);
-  // Store playback state for BPM adjustment
+  // Store playback state for BPM adjustment and looping
   const playbackStateRef = React.useRef<{
     startTime: number;
     scaleNotes: string[];
@@ -61,9 +151,20 @@ function ScalePracticeApp() {
     currentScaleType: ScaleType;
     startBpm: number;
     playbackId: number;
+    forward: boolean;
+    originalScaleNotesLength: number;
+    loopKey: string;
+    loopScaleType: ScaleType;
   } | null>(null);
   // Playback ID counter to invalidate old scheduled notes
   const playbackIdRef = React.useRef<number>(0);
+  // Ref to track pause state for looping
+  const isPausedRef = React.useRef<boolean>(false);
+  // Ref to track practice mode for looping
+  const isPracticeModeRef = React.useRef<boolean>(false);
+  // Refs to track current key and scale type for looping
+  const currentKeyRef = React.useRef<string | null>(null);
+  const currentScaleTypeRef = React.useRef<ScaleType | null>(null);
 
   // Clear all pending timeouts
   const clearAllTimeouts = () => {
@@ -203,7 +304,8 @@ function ScalePracticeApp() {
   const playScale = async (
     key: string,
     scaleType: ScaleType,
-    startFromIndex: number = 0
+    startFromIndex: number = 0,
+    forward: boolean = true
   ): Promise<void> => {
     if (!piano) return Promise.resolve();
 
@@ -215,10 +317,21 @@ function ScalePracticeApp() {
     await initializeAudio();
 
     // Use notes that match the display spelling
-    const scaleNotes = getScaleNotesForAudio(key, scaleType);
+    const originalScaleNotes = getScaleNotesForAudio(key, scaleType);
+    // Add octave note (root +1 octave) to complete the one-octave range
+    const rootNote = originalScaleNotes[0];
+    const octaveNote = rootNote.replace(/(\d+)$/, match => {
+      return String(parseInt(match) + 1);
+    });
+    const scaleWithOctave = [...originalScaleNotes, octaveNote];
+    // Reverse notes if playing backward
+    const scaleNotes = forward
+      ? scaleWithOctave
+      : [...scaleWithOctave].reverse();
     // Calculate note duration based on BPM (quarter note = 60/BPM seconds)
     const noteDuration = 60 / bpm; // Duration in seconds
-    const totalDuration = (scaleNotes.length + 1) * noteDuration; // +1 for octave note
+    // Scale notes already include octave note, so just use length
+    const totalDuration = scaleNotes.length * noteDuration;
 
     // Store playback state for BPM adjustment
     const playbackStartTime = Date.now();
@@ -230,6 +343,10 @@ function ScalePracticeApp() {
       currentScaleType: scaleType,
       startBpm: bpm,
       playbackId,
+      forward,
+      originalScaleNotesLength: originalScaleNotes.length,
+      loopKey: key,
+      loopScaleType: scaleType,
     };
 
     // Play each note in sequence (starting from startFromIndex)
@@ -256,6 +373,35 @@ function ScalePracticeApp() {
       timeoutRefs.current.push(noteTimeout);
 
       // Highlight note when it starts playing
+      // Map the index in the playing array to the display index
+      // Display only shows originalScaleNotes (without octave)
+      const getDisplayIndex = (playIndex: number): number => {
+        if (forward) {
+          // Forward: [C, D, E, G, A, C5]
+          // Display: [C, D, E, G, A]
+          // If playIndex is the last (octave), highlight root (index 0)
+          if (playIndex === scaleNotes.length - 1) {
+            return 0; // Octave note -> highlight root
+          }
+          return playIndex; // Otherwise, same index
+        } else {
+          // Backward: [C5, A, G, E, D, C] (reversed)
+          // Display: [C, D, E, G, A]
+          // If playIndex is 0 (octave C5), highlight root (index 0)
+          if (playIndex === 0) {
+            return 0; // Octave note -> highlight root
+          }
+          // Map reversed index to display index
+          // playIndex 1 (A) -> display index 4 (A)
+          // playIndex 2 (G) -> display index 3 (G)
+          // playIndex 3 (E) -> display index 2 (E)
+          // playIndex 4 (D) -> display index 1 (D)
+          // playIndex 5 (C) -> display index 0 (C)
+          return originalScaleNotes.length - playIndex;
+        }
+      };
+
+      const displayIndex = getDisplayIndex(index);
       const highlightTimeout = window.setTimeout(
         () => {
           // Only update if this is still the current playback
@@ -263,7 +409,7 @@ function ScalePracticeApp() {
             playbackStateRef.current &&
             playbackStateRef.current.playbackId === currentPlaybackId
           ) {
-            setCurrentPlayingNoteIndex(index);
+            setCurrentPlayingNoteIndex(displayIndex);
           }
         },
         relativeIndex * noteDuration * 1000
@@ -286,63 +432,11 @@ function ScalePracticeApp() {
       timeoutRefs.current.push(unhighlightTimeout);
     });
 
-    // Play octave note at the end (only if we haven't passed it)
-    if (scaleNotes.length > 0 && startFromIndex <= scaleNotes.length) {
-      const octaveNote = scaleNotes[0].replace(/(\d+)$/, match => {
-        return String(parseInt(match) + 1);
-      });
-      const relativeOctaveIndex = scaleNotes.length - startFromIndex;
-      const currentPlaybackId = playbackId; // Capture current playback ID
-
-      // Schedule octave note to play with a timeout that checks playback ID
-      const octaveTimeout = window.setTimeout(
-        () => {
-          // Only play note if this is still the current playback
-          if (
-            playbackStateRef.current &&
-            playbackStateRef.current.playbackId === currentPlaybackId &&
-            piano
-          ) {
-            piano.triggerAttackRelease(octaveNote, noteDuration * 0.9);
-          }
-        },
-        relativeOctaveIndex * noteDuration * 1000
-      );
-      timeoutRefs.current.push(octaveTimeout);
-
-      // Highlight root note when octave plays
-      const octaveHighlightTimeout = window.setTimeout(
-        () => {
-          // Only update if this is still the current playback
-          if (
-            playbackStateRef.current &&
-            playbackStateRef.current.playbackId === currentPlaybackId
-          ) {
-            setCurrentPlayingNoteIndex(0);
-          }
-        },
-        relativeOctaveIndex * noteDuration * 1000
-      );
-      timeoutRefs.current.push(octaveHighlightTimeout);
-
-      // Remove highlight when octave note ends
-      const octaveUnhighlightTimeout = window.setTimeout(
-        () => {
-          // Only update if this is still the current playback
-          if (
-            playbackStateRef.current &&
-            playbackStateRef.current.playbackId === currentPlaybackId
-          ) {
-            setCurrentPlayingNoteIndex(null);
-          }
-        },
-        (relativeOctaveIndex + 1) * noteDuration * 1000
-      );
-      timeoutRefs.current.push(octaveUnhighlightTimeout);
-    }
+    // Note: Octave note is already included in scaleNotes array, so we don't need separate octave note logic
 
     // Return a promise that resolves when playback completes
-    const remainingNotes = scaleNotes.length + 1 - startFromIndex; // +1 for octave
+    // Scale notes already include octave note
+    const remainingNotes = scaleNotes.length - startFromIndex;
     const currentPlaybackId = playbackId; // Capture current playback ID
     return new Promise<void>(resolve => {
       const finishTimeout = window.setTimeout(
@@ -354,8 +448,33 @@ function ScalePracticeApp() {
           ) {
             setIsPlaying(false);
             setCurrentPlayingNoteIndex(null);
+
+            // Store values from parameters (already captured in closure)
+            const loopKey = key;
+            const loopScaleType = scaleType;
+            const loopForward = forward;
+
             clearAllTimeouts();
             playbackStateRef.current = null;
+
+            // Loop if not paused and practice mode is active
+            // Use a small delay to allow React to update refs
+            setTimeout(() => {
+              // Check if we should continue looping
+              // Verify that practice mode is active, not paused, and key/scale match
+              if (
+                !isPausedRef.current &&
+                isPracticeModeRef.current &&
+                currentKeyRef.current === loopKey &&
+                currentScaleTypeRef.current === loopScaleType
+              ) {
+                // Alternate direction: play backward next time
+                const nextForward = !loopForward;
+                setIsPlayingForward(nextForward);
+                // Continue looping the same scale in opposite direction
+                playScale(loopKey, loopScaleType, 0, nextForward);
+              }
+            }, 10);
             resolve();
           }
         },
@@ -406,7 +525,12 @@ function ScalePracticeApp() {
 
         // Reschedule immediately from the next note with new BPM
         // This will make the next note play at the new speed
-        playScale(state.currentKey, state.currentScaleType, nextNoteIndex);
+        playScale(
+          state.currentKey,
+          state.currentScaleType,
+          nextNoteIndex,
+          state.forward
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -433,11 +557,13 @@ function ScalePracticeApp() {
     const randomCombo =
       allCombinations[Math.floor(Math.random() * allCombinations.length)];
 
-    // Set new scale and play it directly
+    // Set new scale and play it directly (will auto-loop forward/backward)
     setCurrentKey(randomCombo.key);
     setCurrentScaleType(randomCombo.scale);
+    setIsPlayingForward(true); // Always start forward
     // Wait for scale to finish playing before starting timer
-    await playScale(randomCombo.key, randomCombo.scale);
+    // The scale will automatically loop forward/backward
+    await playScale(randomCombo.key, randomCombo.scale, 0, true);
 
     // Start session timer after first scale finishes
     setSessionStartTime(Date.now());
@@ -446,7 +572,20 @@ function ScalePracticeApp() {
   // Play next random scale
   const playNextScale = async () => {
     if (selectedKeys.size === 0 || selectedScales.size === 0) return;
-    if (isPlaying) return;
+
+    // Stop current playback if playing
+    if (isPlaying) {
+      // Clear all pending timeouts
+      clearAllTimeouts();
+      // Stop all currently playing notes
+      if (piano) {
+        piano.releaseAll();
+      }
+      // Clear playback state
+      playbackStateRef.current = null;
+      setIsPlaying(false);
+      setCurrentPlayingNoteIndex(null);
+    }
 
     const keysArray = Array.from(selectedKeys);
     const scalesArray = Array.from(selectedScales);
@@ -477,7 +616,8 @@ function ScalePracticeApp() {
     // Set new scale and play it directly
     setCurrentKey(randomCombo.key);
     setCurrentScaleType(randomCombo.scale);
-    await playScale(randomCombo.key, randomCombo.scale);
+    setIsPlayingForward(true);
+    await playScale(randomCombo.key, randomCombo.scale, 0, true);
   };
 
   // Stop practice
@@ -485,6 +625,12 @@ function ScalePracticeApp() {
     // Clear all pending timeouts
     clearAllTimeouts();
     playbackStateRef.current = null;
+    setIsPaused(false);
+
+    // Stop all currently playing notes
+    if (piano) {
+      piano.releaseAll();
+    }
 
     setIsPracticeMode(false);
     setCurrentKey(null);
@@ -515,11 +661,49 @@ function ScalePracticeApp() {
     }
   };
 
-  // Repeat current scale
-  const repeatScale = async () => {
-    if (!currentKey || !currentScaleType || isPlaying) return;
-    await playScale(currentKey, currentScaleType);
-  };
+  // Keyboard shortcuts for practice mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle keyboard shortcuts when in practice mode
+      if (!isPracticeMode) return;
+
+      // Don't prevent if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Spacebar: toggle play/pause
+      if (event.key === ' ') {
+        event.preventDefault(); // Prevent page scroll
+        if (currentKey && currentScaleType) {
+          togglePause();
+        }
+      }
+
+      // Enter: go to next scale
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent form submission
+        playNextScale();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isPracticeMode,
+    currentKey,
+    currentScaleType,
+    togglePause,
+    playNextScale,
+  ]);
 
   // Auto-play scale when it changes during practice
   useEffect(() => {
@@ -528,149 +712,13 @@ function ScalePracticeApp() {
       currentKey &&
       currentScaleType &&
       !isPlaying &&
+      !isPaused &&
       piano
     ) {
-      const playCurrentScale = async () => {
-        // Clear any existing timeouts
-        clearAllTimeouts();
-
-        await initializeAudio();
-        setIsPlaying(true);
-        setCurrentPlayingNoteIndex(null);
-        // Use notes that match the display spelling
-        const scaleNotes = getScaleNotesForAudio(currentKey, currentScaleType);
-        // Calculate note duration based on BPM (quarter note = 60/BPM seconds)
-        const noteDuration = 60 / bpm;
-        const totalDuration = (scaleNotes.length + 1) * noteDuration;
-
-        // Store playback state for BPM adjustment
-        const playbackStartTime = Date.now();
-        const playbackId = ++playbackIdRef.current; // Increment and get new playback ID
-        playbackStateRef.current = {
-          startTime: playbackStartTime,
-          scaleNotes,
-          currentKey,
-          currentScaleType,
-          startBpm: bpm,
-          playbackId,
-        };
-
-        const currentPlaybackId = playbackId; // Capture current playback ID
-        scaleNotes.forEach((note, index) => {
-          // Schedule note to play with a timeout that checks playback ID
-          const noteTimeout = window.setTimeout(
-            () => {
-              // Only play note if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId &&
-                piano
-              ) {
-                piano.triggerAttackRelease(note, noteDuration * 0.9);
-              }
-            },
-            index * noteDuration * 1000
-          );
-          timeoutRefs.current.push(noteTimeout);
-
-          // Highlight note when it starts playing
-          const highlightTimeout = window.setTimeout(
-            () => {
-              // Only update if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId
-              ) {
-                setCurrentPlayingNoteIndex(index);
-              }
-            },
-            index * noteDuration * 1000
-          );
-          timeoutRefs.current.push(highlightTimeout);
-
-          // Remove highlight when note ends
-          const unhighlightTimeout = window.setTimeout(
-            () => {
-              // Only update if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId
-              ) {
-                setCurrentPlayingNoteIndex(null);
-              }
-            },
-            (index + 1) * noteDuration * 1000
-          );
-          timeoutRefs.current.push(unhighlightTimeout);
-        });
-
-        if (scaleNotes.length > 0) {
-          const octaveNote = scaleNotes[0].replace(/(\d+)$/, match => {
-            return String(parseInt(match) + 1);
-          });
-          // Schedule octave note to play with a timeout that checks playback ID
-          const octaveTimeout = window.setTimeout(
-            () => {
-              // Only play note if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId &&
-                piano
-              ) {
-                piano.triggerAttackRelease(octaveNote, noteDuration * 0.9);
-              }
-            },
-            scaleNotes.length * noteDuration * 1000
-          );
-          timeoutRefs.current.push(octaveTimeout);
-
-          // Highlight root note when octave plays
-          const octaveHighlightTimeout = window.setTimeout(
-            () => {
-              // Only update if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId
-              ) {
-                setCurrentPlayingNoteIndex(0);
-              }
-            },
-            scaleNotes.length * noteDuration * 1000
-          );
-          timeoutRefs.current.push(octaveHighlightTimeout);
-
-          // Remove highlight when octave note ends
-          const octaveUnhighlightTimeout = window.setTimeout(
-            () => {
-              // Only update if this is still the current playback
-              if (
-                playbackStateRef.current &&
-                playbackStateRef.current.playbackId === currentPlaybackId
-              ) {
-                setCurrentPlayingNoteIndex(null);
-              }
-            },
-            (scaleNotes.length + 1) * noteDuration * 1000
-          );
-          timeoutRefs.current.push(octaveUnhighlightTimeout);
-        }
-
-        const finishPlaybackId = playbackId; // Capture playback ID for finish callback
-        const finishTimeout = window.setTimeout(() => {
-          // Only resolve if this is still the current playback
-          if (
-            playbackStateRef.current &&
-            playbackStateRef.current.playbackId === finishPlaybackId
-          ) {
-            setIsPlaying(false);
-            setCurrentPlayingNoteIndex(null);
-            clearAllTimeouts();
-            playbackStateRef.current = null;
-          }
-        }, totalDuration * 1000);
-        timeoutRefs.current.push(finishTimeout);
-      };
-      playCurrentScale();
+      // Always start forward when scale changes
+      setIsPlayingForward(true);
+      // Use the main playScale function
+      playScale(currentKey, currentScaleType, 0, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKey, currentScaleType, isPracticeMode, piano]);
@@ -781,7 +829,8 @@ function ScalePracticeApp() {
                 currentPlayingNoteIndex={currentPlayingNoteIndex}
                 onStartPractice={startPractice}
                 onStopPractice={stopPractice}
-                onRepeatScale={repeatScale}
+                onTogglePause={togglePause}
+                isPaused={isPaused}
                 onNextScale={playNextScale}
                 selectedKeys={selectedKeys}
                 selectedScales={selectedScales}

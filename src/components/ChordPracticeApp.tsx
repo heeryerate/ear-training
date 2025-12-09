@@ -14,6 +14,8 @@ type ActiveTab = 'practice' | 'progress' | 'settings';
 function ChordPracticeApp() {
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isPlayingForward, setIsPlayingForward] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('practice');
   const [bpm, setBpm] = useState(120);
 
@@ -58,6 +60,27 @@ function ChordPracticeApp() {
   } | null>(null);
   // Playback ID counter to invalidate old scheduled notes
   const playbackIdRef = React.useRef<number>(0);
+  // Ref to track pause state for looping
+  const isPausedRef = React.useRef<boolean>(false);
+  // Ref to track practice mode state for looping
+  const isPracticeModeRef = React.useRef<boolean>(false);
+  // Refs to track current key and chord type for looping
+  const currentKeyRef = React.useRef<string | null>(null);
+  const currentChordTypeRef = React.useRef<ChordType | null>(null);
+
+  // Sync refs with state
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+  useEffect(() => {
+    isPracticeModeRef.current = isPracticeMode;
+  }, [isPracticeMode]);
+  useEffect(() => {
+    currentKeyRef.current = currentKey;
+  }, [currentKey]);
+  useEffect(() => {
+    currentChordTypeRef.current = currentChordType;
+  }, [currentChordType]);
 
   // Clear all pending timeouts
   const clearAllTimeouts = () => {
@@ -157,7 +180,8 @@ function ChordPracticeApp() {
   // Play chord
   const playChord = async (
     key: string,
-    chordType: ChordType
+    chordType: ChordType,
+    forward: boolean = true
   ): Promise<void> => {
     if (!piano) return Promise.resolve();
 
@@ -169,7 +193,11 @@ function ChordPracticeApp() {
     await initializeAudio();
 
     // Use notes that match the display spelling
-    const chordNotes = getChordNotesForAudio(key, chordType);
+    const originalChordNotes = getChordNotesForAudio(key, chordType);
+    // Reverse notes if playing backward
+    const chordNotes = forward
+      ? originalChordNotes
+      : [...originalChordNotes].reverse();
     // Calculate durations based on BPM (quarter note = 60/BPM seconds)
     const quarterNoteDuration = 60 / bpm;
     const chordDuration = quarterNoteDuration * 2; // 2 quarter notes for full chord
@@ -218,6 +246,23 @@ function ChordPracticeApp() {
     chordNotes.forEach((note, index) => {
       const noteStartTime = chordDuration * 1000 + index * noteGap * 1000;
 
+      // Map the index from the playing array (which may be reversed) to the display index
+      // Display always shows originalChordNotes in forward order
+      const getDisplayIndex = (playIndex: number): number => {
+        if (forward) {
+          // Forward: playIndex matches display index
+          return playIndex;
+        } else {
+          // Backward: chordNotes is reversed, so map back to original position
+          // playIndex 0 in reversed array = last note in original = originalChordNotes.length - 1
+          // playIndex 1 in reversed array = second-to-last note = originalChordNotes.length - 2
+          // etc.
+          return originalChordNotes.length - 1 - playIndex;
+        }
+      };
+
+      const displayIndex = getDisplayIndex(index);
+
       // Schedule note highlight
       const noteHighlightTimeout = window.setTimeout(() => {
         // Only update if this is still the current playback
@@ -225,7 +270,7 @@ function ChordPracticeApp() {
           playbackStateRef.current &&
           playbackStateRef.current.playbackId === currentPlaybackId
         ) {
-          setCurrentPlayingNoteIndex(index);
+          setCurrentPlayingNoteIndex(displayIndex);
         }
       }, noteStartTime);
       timeoutRefs.current.push(noteHighlightTimeout);
@@ -274,6 +319,31 @@ function ChordPracticeApp() {
           setCurrentPlayingNoteIndex(null);
           clearAllTimeouts();
           playbackStateRef.current = null;
+
+          // Store values from parameters (already captured in closure)
+          const loopKey = key;
+          const loopChordType = chordType;
+          const loopForward = forward;
+
+          // Loop if not paused and practice mode is active
+          // Use a small delay to allow React to update refs
+          setTimeout(() => {
+            // Check if we should continue looping
+            // Verify that practice mode is active, not paused, and key/chord match
+            if (
+              !isPausedRef.current &&
+              isPracticeModeRef.current &&
+              currentKeyRef.current === loopKey &&
+              currentChordTypeRef.current === loopChordType
+            ) {
+              // Alternate direction: play backward next time
+              const nextForward = !loopForward;
+              setIsPlayingForward(nextForward);
+              // Continue looping the same chord in opposite direction
+              playChord(loopKey, loopChordType, nextForward);
+            }
+          }, 10);
+
           resolve();
         }
       }, totalDuration * 1000);
@@ -332,7 +402,7 @@ function ChordPracticeApp() {
 
         // Reschedule immediately from the next note with new BPM
         // This will make the next note play at the new speed
-        playChord(state.currentKey, state.currentChordType);
+        playChord(state.currentKey, state.currentChordType, isPlayingForward);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -363,7 +433,7 @@ function ChordPracticeApp() {
     setCurrentKey(randomCombo.key);
     setCurrentChordType(randomCombo.chord);
     // Wait for chord to finish playing before starting timer
-    await playChord(randomCombo.key, randomCombo.chord);
+    await playChord(randomCombo.key, randomCombo.chord, true);
 
     // Start session timer after first chord finishes
     setSessionStartTime(Date.now());
@@ -372,7 +442,20 @@ function ChordPracticeApp() {
   // Play next random chord
   const playNextChord = async () => {
     if (selectedKeys.size === 0 || selectedChords.size === 0) return;
-    if (isPlaying) return;
+
+    // Stop current playback if playing
+    if (isPlaying) {
+      // Clear all pending timeouts
+      clearAllTimeouts();
+      // Stop all currently playing notes
+      if (piano) {
+        piano.releaseAll();
+      }
+      // Clear playback state
+      playbackStateRef.current = null;
+      setIsPlaying(false);
+      setCurrentPlayingNoteIndex(null);
+    }
 
     const keysArray = Array.from(selectedKeys);
     const chordsArray = Array.from(selectedChords);
@@ -400,10 +483,11 @@ function ChordPracticeApp() {
     const randomCombo =
       combinationsToUse[Math.floor(Math.random() * combinationsToUse.length)];
 
-    // Set new chord and play it directly
+    // Set new chord and play it directly (always start forward)
     setCurrentKey(randomCombo.key);
     setCurrentChordType(randomCombo.chord);
-    await playChord(randomCombo.key, randomCombo.chord);
+    setIsPlayingForward(true);
+    await playChord(randomCombo.key, randomCombo.chord, true);
   };
 
   // Stop practice
@@ -411,6 +495,12 @@ function ChordPracticeApp() {
     // Clear all pending timeouts
     clearAllTimeouts();
     playbackStateRef.current = null;
+    setIsPaused(false);
+
+    // Stop all currently playing notes
+    if (piano) {
+      piano.releaseAll();
+    }
 
     setIsPracticeMode(false);
     setCurrentKey(null);
@@ -441,23 +531,87 @@ function ChordPracticeApp() {
     }
   };
 
-  // Repeat current chord
-  const repeatChord = async () => {
-    if (!currentKey || !currentChordType || isPlaying) return;
-    await playChord(currentKey, currentChordType);
+  // Toggle pause/play
+  const togglePause = () => {
+    if (!currentKey || !currentChordType) return;
+
+    if (isPaused) {
+      // Resume: start playing
+      setIsPaused(false);
+      if (!isPlaying) {
+        playChord(currentKey, currentChordType, isPlayingForward);
+      }
+    } else {
+      // Pause: stop current playback
+      setIsPaused(true);
+      if (piano) {
+        piano.releaseAll();
+      }
+      clearAllTimeouts();
+      setIsPlaying(false);
+      setCurrentPlayingNoteIndex(null);
+    }
   };
 
-  // Auto-play chord when practice mode starts and chord is set
+  // Keyboard shortcuts for practice mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle keyboard shortcuts when in practice mode
+      if (!isPracticeMode) return;
+
+      // Don't prevent if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Spacebar: toggle play/pause
+      if (event.key === ' ') {
+        event.preventDefault(); // Prevent page scroll
+        if (currentKey && currentChordType) {
+          togglePause();
+        }
+      }
+
+      // Enter: go to next chord
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent form submission
+        playNextChord();
+      }
+
+      // Escape: stop practice
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        stopPractice();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+    // Note: togglePause, playNextChord, and stopPractice are intentionally omitted from deps
+    // to avoid recreating the listener on every render. The closure will capture
+    // the latest function references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPracticeMode, currentKey, currentChordType]);
+
+  // Auto-play chord when practice mode starts and chord is set (and not paused)
   useEffect(() => {
     if (
       isPracticeMode &&
       currentKey &&
       currentChordType &&
       piano &&
-      !isPlaying
+      !isPlaying &&
+      !isPaused
     ) {
       const playCurrentChord = async () => {
-        await playChord(currentKey, currentChordType);
+        await playChord(currentKey, currentChordType, true);
       };
       playCurrentChord();
     }
@@ -566,7 +720,8 @@ function ChordPracticeApp() {
                 currentPlayingNoteIndex={currentPlayingNoteIndex}
                 onStartPractice={startPractice}
                 onStopPractice={stopPractice}
-                onRepeatChord={repeatChord}
+                onTogglePause={togglePause}
+                isPaused={isPaused}
                 onNextChord={playNextChord}
                 selectedKeys={selectedKeys}
                 selectedChords={selectedChords}

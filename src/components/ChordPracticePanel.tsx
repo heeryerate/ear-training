@@ -14,7 +14,8 @@ interface ChordPracticePanelProps {
   currentPlayingNoteIndex: number | null;
   onStartPractice: () => void;
   onStopPractice: () => void;
-  onRepeatChord: () => void;
+  onTogglePause: () => void;
+  isPaused: boolean;
   onNextChord: () => void;
   selectedKeys: Set<string>;
   selectedChords: Set<ChordType>;
@@ -30,7 +31,8 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
   currentPlayingNoteIndex,
   onStartPractice,
   onStopPractice,
-  onRepeatChord,
+  onTogglePause,
+  isPaused,
   onNextChord,
   selectedKeys,
   selectedChords,
@@ -107,27 +109,23 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
             <button
               className="control-button stop-button"
               onClick={onStopPractice}
-              disabled={isPlaying}
             >
-              ⏹ Stop
+              ⏹ Stop <span className="key-indicator">(Esc)</span>
             </button>
             <button
-              className="control-button repeat-button"
-              onClick={onRepeatChord}
-              disabled={isPlaying || !currentKey || !currentChordType}
+              className="control-button pause-play-button"
+              onClick={onTogglePause}
+              disabled={!currentKey || !currentChordType}
             >
-              ↻ Repeat
+              {isPaused ? '▶ Play' : '⏸ Pause'}{' '}
+              <span className="key-indicator">(Space)</span>
             </button>
             <button
               className="control-button next-button"
               onClick={onNextChord}
-              disabled={
-                isPlaying ||
-                selectedKeys.size === 0 ||
-                selectedChords.size === 0
-              }
+              disabled={selectedKeys.size === 0 || selectedChords.size === 0}
             >
-              ⏭ Next
+              ⏭ Next <span className="key-indicator">(Enter)</span>
             </button>
           </div>
         )}

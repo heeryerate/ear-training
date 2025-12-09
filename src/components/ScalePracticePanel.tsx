@@ -14,7 +14,8 @@ interface ScalePracticePanelProps {
   currentPlayingNoteIndex: number | null;
   onStartPractice: () => void;
   onStopPractice: () => void;
-  onRepeatScale: () => void;
+  onTogglePause: () => void;
+  isPaused: boolean;
   onNextScale: () => void;
   selectedKeys: Set<string>;
   selectedScales: Set<ScaleType>;
@@ -30,7 +31,8 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
   currentPlayingNoteIndex,
   onStartPractice,
   onStopPractice,
-  onRepeatScale,
+  onTogglePause,
+  isPaused,
   onNextScale,
   selectedKeys,
   selectedScales,
@@ -103,27 +105,23 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
             <button
               className="control-button stop-button"
               onClick={onStopPractice}
-              disabled={isPlaying}
             >
-              ⏹ Stop
+              ⏹ Stop <span className="key-indicator">(Esc)</span>
             </button>
             <button
-              className="control-button repeat-button"
-              onClick={onRepeatScale}
-              disabled={isPlaying || !currentKey || !currentScaleType}
+              className="control-button pause-play-button"
+              onClick={onTogglePause}
+              disabled={!currentKey || !currentScaleType}
             >
-              ↻ Repeat
+              {isPaused ? '▶ Play' : '⏸ Pause'}{' '}
+              <span className="key-indicator">(Space)</span>
             </button>
             <button
               className="control-button next-button"
               onClick={onNextScale}
-              disabled={
-                isPlaying ||
-                selectedKeys.size === 0 ||
-                selectedScales.size === 0
-              }
+              disabled={selectedKeys.size === 0 || selectedScales.size === 0}
             >
-              ⏭ Next
+              ⏭ Next <span className="key-indicator">(Enter)</span>
             </button>
           </div>
         )}
