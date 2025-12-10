@@ -1,3 +1,4 @@
+import { DifficultyLevel } from './chords';
 import {
   getDiatonicNotes,
   getNoteDisplayName,
@@ -26,7 +27,15 @@ export type ScaleType =
   | 'harmonic-minor'
   | 'melodic-minor'
   | 'lydian-dominant'
-  | 'mixolydian-flat6';
+  | 'mixolydian-flat6'
+  | 'lydian-augmented'
+  | 'half-whole-diminished'
+  | 'whole-half-diminished'
+  | 'blues-scale'
+  | 'neapolitan-minor'
+  | 'neapolitan-major'
+  | 'double-harmonic-major'
+  | 'hungarian-minor';
 
 export interface Scale {
   name: string;
@@ -102,6 +111,78 @@ const getMixolydianFlat6Notes = (key: string): string[] => {
   if (!keyCenter) return getDiatonicNotes('C');
   const tonic = keyCenter.tonic;
   const intervals = [0, 2, 4, 5, 7, 8, 10]; // Mixolydian ♭6
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Lydian Augmented (3rd mode of melodic minor): intervals [0, 2, 4, 6, 8, 9, 11]
+const getLydianAugmentedNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 2, 4, 6, 8, 9, 11]; // Lydian Augmented
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Half-Whole Diminished (octatonic): intervals [0, 1, 3, 4, 6, 7, 9, 10]
+const getHalfWholeDiminishedNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 1, 3, 4, 6, 7, 9, 10]; // Half-Whole Diminished
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Whole-Half Diminished (octatonic): intervals [0, 2, 3, 5, 6, 8, 9, 11]
+const getWholeHalfDiminishedNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 2, 3, 5, 6, 8, 9, 11]; // Whole-Half Diminished
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Blues Scale (classic 6-note): intervals [0, 3, 5, 6, 7, 10]
+const getBluesScaleNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 3, 5, 6, 7, 10]; // Blues Scale
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Neapolitan Minor: intervals [0, 1, 3, 5, 7, 8, 11]
+const getNeapolitanMinorNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 1, 3, 5, 7, 8, 11]; // Neapolitan Minor
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Neapolitan Major: intervals [0, 1, 3, 5, 7, 9, 11]
+const getNeapolitanMajorNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 1, 3, 5, 7, 9, 11]; // Neapolitan Major
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Double Harmonic Major (Byzantine): intervals [0, 1, 4, 5, 7, 8, 11]
+const getDoubleHarmonicMajorNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 1, 4, 5, 7, 8, 11]; // Double Harmonic Major
+  return intervals.map(interval => transposeNote(tonic, interval));
+};
+
+// Hungarian Minor: intervals [0, 2, 3, 6, 7, 8, 11]
+const getHungarianMinorNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return getDiatonicNotes('C');
+  const tonic = keyCenter.tonic;
+  const intervals = [0, 2, 3, 6, 7, 8, 11]; // Hungarian Minor
   return intervals.map(interval => transposeNote(tonic, interval));
 };
 
@@ -261,6 +342,22 @@ export const getScaleNotes = (key: string, scaleType: ScaleType): string[] => {
       return getLydianDominantNotes(key);
     case 'mixolydian-flat6':
       return getMixolydianFlat6Notes(key);
+    case 'lydian-augmented':
+      return getLydianAugmentedNotes(key);
+    case 'half-whole-diminished':
+      return getHalfWholeDiminishedNotes(key);
+    case 'whole-half-diminished':
+      return getWholeHalfDiminishedNotes(key);
+    case 'blues-scale':
+      return getBluesScaleNotes(key);
+    case 'neapolitan-minor':
+      return getNeapolitanMinorNotes(key);
+    case 'neapolitan-major':
+      return getNeapolitanMajorNotes(key);
+    case 'double-harmonic-major':
+      return getDoubleHarmonicMajorNotes(key);
+    case 'hungarian-minor':
+      return getHungarianMinorNotes(key);
     default:
       return getMajorScaleNotes(key);
   }
@@ -442,6 +539,14 @@ export const getScaleName = (key: string, scaleType: ScaleType): string => {
     'melodic-minor': 'Melodic Minor',
     'lydian-dominant': 'Lydian Dominant',
     'mixolydian-flat6': 'Mixolydian ♭6',
+    'lydian-augmented': 'Lydian Augmented',
+    'half-whole-diminished': 'Half-Whole Diminished',
+    'whole-half-diminished': 'Whole-Half Diminished',
+    'blues-scale': 'Blues Scale',
+    'neapolitan-minor': 'Neapolitan Minor',
+    'neapolitan-major': 'Neapolitan Major',
+    'double-harmonic-major': 'Double Harmonic Major',
+    'hungarian-minor': 'Hungarian Minor',
   };
   return `${key} ${scaleTypeNames[scaleType]}`;
 };
@@ -469,6 +574,14 @@ export const getAvailableScaleTypes = (): ScaleType[] => {
     'melodic-minor',
     'lydian-dominant',
     'mixolydian-flat6',
+    'lydian-augmented',
+    'half-whole-diminished',
+    'whole-half-diminished',
+    'blues-scale',
+    'neapolitan-minor',
+    'neapolitan-major',
+    'double-harmonic-major',
+    'hungarian-minor',
   ];
 };
 
@@ -495,6 +608,14 @@ export const getScaleDisplayName = (scaleType: ScaleType): string => {
     'melodic-minor': 'Melodic Minor',
     'lydian-dominant': 'Lydian Dominant',
     'mixolydian-flat6': 'Mixolydian ♭6',
+    'lydian-augmented': 'Lydian Augmented',
+    'half-whole-diminished': 'Half-Whole Diminished',
+    'whole-half-diminished': 'Whole-Half Diminished',
+    'blues-scale': 'Blues Scale',
+    'neapolitan-minor': 'Neapolitan Minor',
+    'neapolitan-major': 'Neapolitan Major',
+    'double-harmonic-major': 'Double Harmonic Major',
+    'hungarian-minor': 'Hungarian Minor',
   };
   return scaleTypeNames[scaleType];
 };
@@ -515,6 +636,9 @@ export const getScaleCategory = (scaleType: ScaleType): ScaleCategory => {
     'pentatonic-major',
     'major-blues',
     'major-bebop',
+    'lydian-augmented',
+    'neapolitan-major',
+    'double-harmonic-major',
   ];
 
   // Tonic Minor: scales that work over minor tonality
@@ -527,6 +651,9 @@ export const getScaleCategory = (scaleType: ScaleType): ScaleCategory => {
     'harmonic-minor',
     'melodic-minor',
     'locrian',
+    'neapolitan-minor',
+    'hungarian-minor',
+    'blues-scale',
   ];
 
   // Dominant: scales that work over dominant chords
@@ -539,7 +666,12 @@ export const getScaleCategory = (scaleType: ScaleType): ScaleCategory => {
   ];
 
   // Symmetrical / Outside Colors: symmetric scales and outside sounds
-  const symmetricalScales: ScaleType[] = ['diminished', 'whole-tone'];
+  const symmetricalScales: ScaleType[] = [
+    'diminished',
+    'whole-tone',
+    'half-whole-diminished',
+    'whole-half-diminished',
+  ];
 
   if (tonicMajorScales.includes(scaleType)) return 'tonic-major';
   if (tonicMinorScales.includes(scaleType)) return 'tonic-minor';
@@ -568,4 +700,59 @@ export const getScaleTypesByCategory = (): Record<
   });
 
   return grouped;
+};
+
+// Get scale types by difficulty level
+export const getScaleTypesByDifficulty = (
+  difficulty: DifficultyLevel
+): ScaleType[] => {
+  const entryScales: ScaleType[] = [
+    'major',
+    'minor',
+    'pentatonic-major',
+    'pentatonic-minor',
+    'dorian',
+  ];
+
+  const intermediateScales: ScaleType[] = [
+    ...entryScales,
+    'mixolydian',
+    'lydian',
+    'phrygian',
+    'locrian',
+    'major-blues',
+    'minor-blues',
+    'harmonic-minor',
+    'melodic-minor',
+  ];
+
+  const professionalScales: ScaleType[] = [
+    ...intermediateScales,
+    'major-bebop',
+    'dominant-bebop',
+    'diminished',
+    'whole-tone',
+    'altered',
+    'lydian-dominant',
+    'mixolydian-flat6',
+    'lydian-augmented',
+    'half-whole-diminished',
+    'whole-half-diminished',
+    'blues-scale',
+    'neapolitan-minor',
+    'neapolitan-major',
+    'double-harmonic-major',
+    'hungarian-minor',
+  ];
+
+  switch (difficulty) {
+    case 'entry':
+      return entryScales;
+    case 'intermediate':
+      return intermediateScales;
+    case 'professional':
+      return professionalScales;
+    default:
+      return professionalScales;
+  }
 };

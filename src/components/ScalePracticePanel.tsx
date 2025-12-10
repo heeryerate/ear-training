@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import {
   getScaleName,
   getScaleNoteDisplayNames,
   ScaleType,
 } from '../data/scales';
+
+type PracticeModeType = 'regular' | 'pattern';
 
 interface ScalePracticePanelProps {
   currentKey: string | null;
@@ -21,6 +23,17 @@ interface ScalePracticePanelProps {
   selectedScales: Set<ScaleType>;
   bpm: number;
   onBpmChange: (bpm: number) => void;
+  autoPlayNext: 'off' | 'random' | 'key-priority' | 'scale-priority';
+  onAutoPlayNextChange: (
+    mode: 'off' | 'random' | 'key-priority' | 'scale-priority'
+  ) => void;
+  practiceModeType: PracticeModeType;
+  onPracticeModeTypeChange: (mode: PracticeModeType) => void;
+  patternInput: string;
+  onPatternInputChange: (pattern: string) => void;
+  patternSequences: string[][];
+  patternSequencesDisplay: Array<Array<{ note: string; octave: number }>>;
+  currentSequenceIndex: number;
 }
 
 const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
@@ -38,6 +51,15 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
   selectedScales,
   bpm,
   onBpmChange,
+  autoPlayNext,
+  onAutoPlayNextChange,
+  practiceModeType,
+  onPracticeModeTypeChange,
+  patternInput,
+  onPatternInputChange,
+  patternSequences,
+  patternSequencesDisplay,
+  currentSequenceIndex,
 }) => {
   const scaleName =
     currentKey && currentScaleType
@@ -48,43 +70,202 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
       ? getScaleNoteDisplayNames(currentKey, currentScaleType)
       : [];
 
+  // Refs for pattern sequences to enable scrolling
+  const sequenceRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll active sequence into view (centered) within the container only
+  useEffect(() => {
+    if (
+      practiceModeType === 'pattern' &&
+      currentSequenceIndex !== null &&
+      sequenceRefs.current[currentSequenceIndex] &&
+      containerRef.current
+    ) {
+      const activeElement = sequenceRefs.current[currentSequenceIndex];
+      const container = containerRef.current;
+
+      if (activeElement && container) {
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = activeElement.getBoundingClientRect();
+        const scrollTop = container.scrollTop;
+        const elementOffsetTop = activeElement.offsetTop;
+        const containerHeight = container.clientHeight;
+        const elementHeight = activeElement.offsetHeight;
+
+        // Check if element is already fully visible in viewport (vertical)
+        const elementTop = elementRect.top - containerRect.top;
+        const elementBottom = elementTop + elementHeight;
+        const isFullyVisible =
+          elementTop >= 0 && elementBottom <= containerHeight;
+
+        // For the first few sequences (first row), keep scroll at top
+        if (currentSequenceIndex < 3) {
+          // Only scroll if we're scrolled down and need to go back to top
+          if (scrollTop > 0) {
+            container.scrollTo({
+              top: 0,
+              behavior: 'smooth',
+            });
+          }
+        } else if (!isFullyVisible) {
+          // Only scroll if element is not fully visible
+          // Calculate the position to center the element vertically
+          const targetScrollTop =
+            elementOffsetTop - containerHeight / 2 + elementHeight / 2;
+
+          container.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [currentSequenceIndex, practiceModeType]);
+
   return (
     <div className="scale-practice-panel">
       <h2>🎵 Scale Practice</h2>
+
+      {/* Practice Mode Selector - Only show when not in practice */}
+      {!isPracticeMode && (
+        <div className="practice-mode-selector">
+          <label>Practice Mode:</label>
+          <div className="mode-buttons">
+            <button
+              className={`mode-button ${practiceModeType === 'regular' ? 'active' : ''}`}
+              onClick={() => onPracticeModeTypeChange('regular')}
+            >
+              Regular
+            </button>
+            <button
+              className={`mode-button ${practiceModeType === 'pattern' ? 'active' : ''}`}
+              onClick={() => onPracticeModeTypeChange('pattern')}
+            >
+              Pattern
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pattern Input - Only show when pattern mode is selected and not in practice */}
+      {!isPracticeMode && practiceModeType === 'pattern' && (
+        <div className="pattern-input-container">
+          <label htmlFor="pattern-input">Pattern:</label>
+          <input
+            id="pattern-input"
+            type="text"
+            value={patternInput}
+            onChange={e => onPatternInputChange(e.target.value)}
+            placeholder="1 2 3 5"
+            className="pattern-input"
+          />
+          <div className="pattern-help">(1-13)</div>
+        </div>
+      )}
 
       {/* Current Scale Display - Only show when practice is active */}
       {isPracticeMode && currentKey && currentScaleType && (
         <div className="current-scale-display">
           <div className="scale-name-large">{scaleName}</div>
-          <div className="scale-notes-display">
-            {scaleNoteNames.map((noteName, index) => {
-              const isPlaying = currentPlayingNoteIndex === index;
-              return (
-                <span
-                  key={index}
-                  className={`scale-note-display ${isPlaying ? 'playing' : ''}`}
-                >
-                  {noteName}
-                </span>
-              );
-            })}
-          </div>
+          {practiceModeType === 'regular' ? (
+            <div className="scale-notes-display">
+              {scaleNoteNames.map((noteName, index) => {
+                const isPlayingNote = currentPlayingNoteIndex === index;
+                return (
+                  <span
+                    key={index}
+                    className={`scale-note-display ${isPlayingNote ? 'playing' : ''}`}
+                  >
+                    {noteName}
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div ref={containerRef} className="pattern-sequences-display">
+              {patternSequencesDisplay.map((sequence, seqIndex) => {
+                const isCurrentSequence = currentSequenceIndex === seqIndex;
+                return (
+                  <div
+                    key={seqIndex}
+                    ref={el => {
+                      sequenceRefs.current[seqIndex] = el;
+                    }}
+                    className={`pattern-sequence ${isCurrentSequence ? 'active' : ''}`}
+                  >
+                    {sequence.map((noteData, noteIndex) => (
+                      <span key={noteIndex} className="pattern-note">
+                        {noteData.note}
+                        {noteData.octave > 0 && (
+                          <span className="octave-indicator">
+                            +{noteData.octave}
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* BPM Control - Only show during practice */}
+      {/* Practice Settings - Only show during practice */}
       {isPracticeMode && (
-        <div className="bpm-control">
-          <label htmlFor="bpm-slider">BPM: {bpm}</label>
-          <input
-            id="bpm-slider"
-            type="range"
-            min="60"
-            max="200"
-            value={bpm}
-            onChange={e => onBpmChange(parseInt(e.target.value))}
-            className="bpm-slider"
-          />
+        <div className="practice-settings">
+          <div className="practice-settings-header">
+            <span className="practice-settings-title">⚙️ Settings</span>
+          </div>
+          <div className="practice-settings-content">
+            <div className="practice-settings-item">
+              <label htmlFor="bpm-slider" className="practice-settings-label">
+                BPM
+              </label>
+              <div className="practice-settings-control">
+                <span className="practice-settings-value">{bpm}</span>
+                <input
+                  id="bpm-slider"
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={bpm}
+                  onChange={e => onBpmChange(parseInt(e.target.value))}
+                  className="bpm-slider"
+                />
+              </div>
+            </div>
+            <div className="practice-settings-item">
+              <label
+                htmlFor="auto-play-next-select"
+                className="practice-settings-label"
+              >
+                Auto-play next
+              </label>
+              <div className="practice-settings-control">
+                <select
+                  id="auto-play-next-select"
+                  value={autoPlayNext}
+                  onChange={e =>
+                    onAutoPlayNextChange(
+                      e.target.value as
+                        | 'off'
+                        | 'random'
+                        | 'key-priority'
+                        | 'scale-priority'
+                    )
+                  }
+                  className="auto-play-next-select"
+                >
+                  <option value="off">Off</option>
+                  <option value="random">Random</option>
+                  <option value="key-priority">Key Priority</option>
+                  <option value="scale-priority">Scale Priority</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

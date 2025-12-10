@@ -7,6 +7,7 @@ interface KeySelectionPanelProps {
   selectedKeys: Set<string>;
   onToggleKey: (key: string) => void;
   disabled: boolean;
+  difficulty?: unknown; // Keep for compatibility but not used
 }
 
 const KeySelectionPanel: React.FC<KeySelectionPanelProps> = ({

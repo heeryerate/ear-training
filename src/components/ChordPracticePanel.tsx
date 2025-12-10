@@ -21,6 +21,10 @@ interface ChordPracticePanelProps {
   selectedChords: Set<ChordType>;
   bpm: number;
   onBpmChange: (bpm: number) => void;
+  autoPlayNext: 'off' | 'random' | 'key-priority' | 'chord-priority';
+  onAutoPlayNextChange: (
+    mode: 'off' | 'random' | 'key-priority' | 'chord-priority'
+  ) => void;
 }
 
 const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
@@ -38,6 +42,8 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
   selectedChords,
   bpm,
   onBpmChange,
+  autoPlayNext,
+  onAutoPlayNextChange,
 }) => {
   const chordName =
     currentKey && currentChordType
@@ -76,19 +82,60 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
         </div>
       )}
 
-      {/* BPM Control - Only show during practice */}
+      {/* Practice Settings - Only show during practice */}
       {isPracticeMode && (
-        <div className="bpm-control">
-          <label htmlFor="bpm-slider">BPM: {bpm}</label>
-          <input
-            id="bpm-slider"
-            type="range"
-            min="60"
-            max="200"
-            value={bpm}
-            onChange={e => onBpmChange(parseInt(e.target.value))}
-            className="bpm-slider"
-          />
+        <div className="practice-settings">
+          <div className="practice-settings-header">
+            <span className="practice-settings-title">⚙️ Settings</span>
+          </div>
+          <div className="practice-settings-content">
+            <div className="practice-settings-item">
+              <label htmlFor="bpm-slider" className="practice-settings-label">
+                BPM
+              </label>
+              <div className="practice-settings-control">
+                <span className="practice-settings-value">{bpm}</span>
+                <input
+                  id="bpm-slider"
+                  type="range"
+                  min="60"
+                  max="200"
+                  value={bpm}
+                  onChange={e => onBpmChange(parseInt(e.target.value))}
+                  className="bpm-slider"
+                />
+              </div>
+            </div>
+            <div className="practice-settings-item">
+              <label
+                htmlFor="auto-play-next-select"
+                className="practice-settings-label"
+              >
+                Auto-play next
+              </label>
+              <div className="practice-settings-control">
+                <select
+                  id="auto-play-next-select"
+                  value={autoPlayNext}
+                  onChange={e =>
+                    onAutoPlayNextChange(
+                      e.target.value as
+                        | 'off'
+                        | 'random'
+                        | 'key-priority'
+                        | 'chord-priority'
+                    )
+                  }
+                  className="auto-play-next-select"
+                >
+                  <option value="off">Off</option>
+                  <option value="random">Random</option>
+                  <option value="key-priority">Key Priority</option>
+                  <option value="chord-priority">Chord Priority</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

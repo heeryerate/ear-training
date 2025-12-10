@@ -19,8 +19,6 @@ const Menu: React.FC = () => {
                 <div className="thumbnail-icon">🎼</div>
                 <div className="thumbnail-preview">
                   <div className="preview-note">C</div>
-                  <div className="preview-chord">Am</div>
-                  <div className="preview-progress">85%</div>
                 </div>
               </div>
             </div>
@@ -29,7 +27,7 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  Note Recognition • Chord Progressions • Statistics
+                  Master note recognition and chord progressions
                 </span>
               </div>
             </div>
@@ -41,9 +39,7 @@ const Menu: React.FC = () => {
               <div className="thumbnail-content">
                 <div className="thumbnail-icon">🎹</div>
                 <div className="thumbnail-preview">
-                  <div className="preview-scale">C Major</div>
-                  <div className="preview-keys">♯♯♯</div>
-                  <div className="preview-tempo">120 BPM</div>
+                  <div className="preview-scale">G Lydian</div>
                 </div>
               </div>
             </div>
@@ -52,7 +48,7 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  20 Scale Types • All 12 Keys • Progress Tracking
+                  Practice scales with customizable BPM and pattern exercises
                 </span>
               </div>
             </div>
@@ -64,9 +60,7 @@ const Menu: React.FC = () => {
               <div className="thumbnail-content">
                 <div className="thumbnail-icon">🎸</div>
                 <div className="thumbnail-preview">
-                  <div className="preview-chord">C Major</div>
-                  <div className="preview-voicing">1-3-5</div>
-                  <div className="preview-progression">I-IV-V</div>
+                  <div className="preview-chord">D7</div>
                 </div>
               </div>
             </div>
@@ -75,7 +69,8 @@ const Menu: React.FC = () => {
               <div className="menu-item-status">
                 <span className="status-badge status-active">Active</span>
                 <span className="status-features">
-                  22 Chord Types • All 12 Keys • Progress Tracking
+                  Master chord voicings with adjustable tempo and smart practice
+                  modes
                 </span>
               </div>
             </div>
@@ -87,18 +82,18 @@ const Menu: React.FC = () => {
               <div className="thumbnail-content">
                 <div className="thumbnail-icon">🥁</div>
                 <div className="thumbnail-preview">
-                  <div className="preview-beat">4/4 Time</div>
-                  <div className="preview-pattern">♩ ♩ ♩ ♩</div>
-                  <div className="preview-tempo">120 BPM</div>
+                  <div className="preview-beat">3/4 Time</div>
                 </div>
               </div>
             </div>
             <div className="menu-item-content">
               <h3>Groove Practice</h3>
               <div className="menu-item-status">
-                <span className="status-badge status-active">Active</span>
+                <span className="status-badge status-development">
+                  In Development
+                </span>
                 <span className="status-features">
-                  11 Groove Types • Realistic Drums • BPM Control
+                  Develop rhythm and timing with diverse grooves
                 </span>
               </div>
             </div>
@@ -110,9 +105,7 @@ const Menu: React.FC = () => {
               <div className="thumbnail-content">
                 <div className="thumbnail-icon">📖</div>
                 <div className="thumbnail-preview">
-                  <div className="preview-note">𝄞</div>
-                  <div className="preview-staff">♩</div>
-                  <div className="preview-accuracy">85%</div>
+                  <div className="preview-note preview-clef">𝄞</div>
                 </div>
               </div>
             </div>
@@ -123,7 +116,7 @@ const Menu: React.FC = () => {
                   In Development
                 </span>
                 <span className="status-features">
-                  Treble & Bass Clef • Staff Notation • All 12 Keys
+                  Improve sight reading skills with treble and bass clef
                 </span>
               </div>
             </div>

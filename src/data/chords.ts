@@ -22,7 +22,17 @@ export type ChordType =
   | 'minor-6th'
   | 'dominant-13th'
   | 'dominant-7-sharp11'
-  | 'half-diminished-flat9';
+  | 'half-diminished-flat9'
+  | 'dominant-7-flat9'
+  | 'dominant-7-sharp9'
+  | 'dominant-7-flat5'
+  | 'dominant-7-sharp5'
+  | 'minor-11th'
+  | 'major-11th'
+  | 'minor-13th'
+  | 'major-13th'
+  | 'dominant-7-flat9-sharp11'
+  | 'augmented-major-7th';
 
 export interface Chord {
   name: string;
@@ -230,6 +240,96 @@ const getHalfDiminishedFlat9ChordNotes = (key: string): string[] => {
   return [0, 3, 6, 10, 13].map(interval => transposeNote(tonic, interval));
 };
 
+const getDominant7Flat9ChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Dominant 7♭9: 1, 3, 5, b7, b9 (0, 4, 7, 10, 13 semitones)
+  return [0, 4, 7, 10, 13].map(interval => transposeNote(tonic, interval));
+};
+
+const getDominant7Sharp9ChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Dominant 7♯9: 1, 3, 5, b7, #9 (0, 4, 7, 10, 15 semitones)
+  return [0, 4, 7, 10, 15].map(interval => transposeNote(tonic, interval));
+};
+
+const getDominant7Flat5ChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Dominant 7♭5: 1, 3, b5, b7 (0, 4, 6, 10 semitones)
+  return [0, 4, 6, 10].map(interval => transposeNote(tonic, interval));
+};
+
+const getDominant7Sharp5ChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Dominant 7♯5: 1, 3, #5, b7 (0, 4, 8, 10 semitones)
+  return [0, 4, 8, 10].map(interval => transposeNote(tonic, interval));
+};
+
+const getMinor11thChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Minor 11th: 1, b3, 5, b7, 9, 11 (0, 3, 7, 10, 14, 17 semitones)
+  return [0, 3, 7, 10, 14, 17].map(interval => transposeNote(tonic, interval));
+};
+
+const getMajor11thChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Major 11th: 1, 3, 5, 7, 9, 11 (0, 4, 7, 11, 14, 17 semitones)
+  return [0, 4, 7, 11, 14, 17].map(interval => transposeNote(tonic, interval));
+};
+
+const getMinor13thChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Minor 13th: 1, b3, 5, b7, 9, 13 (0, 3, 7, 10, 14, 21 semitones)
+  return [0, 3, 7, 10, 14, 21].map(interval => transposeNote(tonic, interval));
+};
+
+const getMajor13thChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Major 13th: 1, 3, 5, 7, 9, 13 (0, 4, 7, 11, 14, 21 semitones)
+  return [0, 4, 7, 11, 14, 21].map(interval => transposeNote(tonic, interval));
+};
+
+const getDominant7Flat9Sharp11ChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Dominant 7♭9♯11: 1, 3, 5, b7, b9, #11 (0, 4, 7, 10, 13, 18 semitones)
+  return [0, 4, 7, 10, 13, 18].map(interval => transposeNote(tonic, interval));
+};
+
+const getAugmentedMajor7thChordNotes = (key: string): string[] => {
+  const keyCenter = keyCenters.find(k => k.key === key);
+  if (!keyCenter) return [];
+
+  const tonic = keyCenter.tonic;
+  // Augmented Major 7th: 1, 3, #5, 7 (0, 4, 8, 11 semitones)
+  return [0, 4, 8, 11].map(interval => transposeNote(tonic, interval));
+};
+
 // Get chord notes for a given key and chord type
 export const getChordNotes = (key: string, chordType: ChordType): string[] => {
   switch (chordType) {
@@ -277,6 +377,26 @@ export const getChordNotes = (key: string, chordType: ChordType): string[] => {
       return getDominant7Sharp11ChordNotes(key);
     case 'half-diminished-flat9':
       return getHalfDiminishedFlat9ChordNotes(key);
+    case 'dominant-7-flat9':
+      return getDominant7Flat9ChordNotes(key);
+    case 'dominant-7-sharp9':
+      return getDominant7Sharp9ChordNotes(key);
+    case 'dominant-7-flat5':
+      return getDominant7Flat5ChordNotes(key);
+    case 'dominant-7-sharp5':
+      return getDominant7Sharp5ChordNotes(key);
+    case 'minor-11th':
+      return getMinor11thChordNotes(key);
+    case 'major-11th':
+      return getMajor11thChordNotes(key);
+    case 'minor-13th':
+      return getMinor13thChordNotes(key);
+    case 'major-13th':
+      return getMajor13thChordNotes(key);
+    case 'dominant-7-flat9-sharp11':
+      return getDominant7Flat9Sharp11ChordNotes(key);
+    case 'augmented-major-7th':
+      return getAugmentedMajor7thChordNotes(key);
     default:
       return getMajorChordNotes(key);
   }
@@ -307,6 +427,16 @@ export const getChordName = (key: string, chordType: ChordType): string => {
     'dominant-13th': 'Dominant 13th',
     'dominant-7-sharp11': 'Dominant 7#11',
     'half-diminished-flat9': 'Half-diminished ♭9',
+    'dominant-7-flat9': 'Dominant 7♭9',
+    'dominant-7-sharp9': 'Dominant 7♯9',
+    'dominant-7-flat5': 'Dominant 7♭5',
+    'dominant-7-sharp5': 'Dominant 7♯5',
+    'minor-11th': 'Minor 11th',
+    'major-11th': 'Major 11th',
+    'minor-13th': 'Minor 13th',
+    'major-13th': 'Major 13th',
+    'dominant-7-flat9-sharp11': 'Dominant 7♭9♯11',
+    'augmented-major-7th': 'Augmented Major 7th',
   };
 
   return `${key} ${chordTypeNames[chordType]}`;
@@ -337,6 +467,16 @@ export const getChordDisplayName = (chordType: ChordType): string => {
     'dominant-13th': 'Dominant 13th',
     'dominant-7-sharp11': 'Dominant 7#11',
     'half-diminished-flat9': 'Half-diminished ♭9',
+    'dominant-7-flat9': 'Dominant 7♭9',
+    'dominant-7-sharp9': 'Dominant 7♯9',
+    'dominant-7-flat5': 'Dominant 7♭5',
+    'dominant-7-sharp5': 'Dominant 7♯5',
+    'minor-11th': 'Minor 11th',
+    'major-11th': 'Major 11th',
+    'minor-13th': 'Minor 13th',
+    'major-13th': 'Major 13th',
+    'dominant-7-flat9-sharp11': 'Dominant 7♭9♯11',
+    'augmented-major-7th': 'Augmented Major 7th',
   };
 
   return chordTypeNames[chordType];
@@ -351,26 +491,34 @@ export type ChordCategory =
 
 // Get chord category based on intervals
 export const getChordCategory = (chordType: ChordType): ChordCategory => {
-  // Major-family: Major, Major 7th, Major 6th, Major 9th, Major 6/9
+  // Major-family: Major, Major 7th, Major 6th, Major 9th, Major 6/9,
+  // Major 11th, Major 13th, Augmented Major 7th
   const majorFamilyChords: ChordType[] = [
     'major',
     'major-7th',
     'major-6th',
     'major-9th',
     'major-6-9',
+    'major-11th',
+    'major-13th',
+    'augmented-major-7th',
   ];
 
-  // Minor-family: Minor, Minor 7th, Minor 6th, Minor 9th, Minor Major 7th
+  // Minor-family: Minor, Minor 7th, Minor 6th, Minor 9th, Minor Major 7th,
+  // Minor 11th, Minor 13th
   const minorFamilyChords: ChordType[] = [
     'minor',
     'minor-7th',
     'minor-6th',
     'minor-9th',
     'minor-major-7th',
+    'minor-11th',
+    'minor-13th',
   ];
 
   // Dominant-family: Dominant 7th, Dominant 9th, Dominant 13th, Dominant 7#11,
-  // Sus4, Sus2, Augmented, Augmented 7th
+  // Sus4, Sus2, Augmented, Augmented 7th, Dominant 7♭9, Dominant 7♯9,
+  // Dominant 7♭5, Dominant 7♯5, Dominant 7♭9♯11
   const dominantFamilyChords: ChordType[] = [
     'dominant-7th',
     'dominant-9th',
@@ -380,6 +528,11 @@ export const getChordCategory = (chordType: ChordType): ChordCategory => {
     'sus2',
     'augmented',
     'augmented-7th',
+    'dominant-7-flat9',
+    'dominant-7-sharp9',
+    'dominant-7-flat5',
+    'dominant-7-sharp5',
+    'dominant-7-flat9-sharp11',
   ];
 
   // Diminished / Half-diminished family: Diminished, Diminished 7th,
@@ -419,6 +572,68 @@ export const getChordTypesByCategory = (): Record<
   return grouped;
 };
 
+// Difficulty levels for chord selection
+export type DifficultyLevel = 'entry' | 'intermediate' | 'professional';
+
+// Get chord types by difficulty level
+export const getChordTypesByDifficulty = (
+  difficulty: DifficultyLevel
+): ChordType[] => {
+  const entryChords: ChordType[] = [
+    'major',
+    'minor',
+    'dominant-7th',
+    'major-7th',
+    'minor-7th',
+  ];
+
+  const intermediateChords: ChordType[] = [
+    ...entryChords,
+    'diminished',
+    'augmented',
+    'sus2',
+    'sus4',
+    'diminished-7th',
+    'half-diminished-7th',
+    'augmented-7th',
+    'minor-major-7th',
+    'dominant-9th',
+    'major-9th',
+    'minor-9th',
+    'major-6th',
+    'major-6-9',
+    'minor-6th',
+  ];
+
+  const professionalChords: ChordType[] = [
+    ...intermediateChords,
+    'dominant-13th',
+    'dominant-7-sharp11',
+    'half-diminished-flat9',
+    'dominant-7-flat9',
+    'dominant-7-sharp9',
+    'dominant-7-flat5',
+    'dominant-7-sharp5',
+    'minor-11th',
+    'major-11th',
+    'minor-13th',
+    'major-13th',
+    'dominant-7-flat9-sharp11',
+    'augmented-major-7th',
+  ];
+
+  switch (difficulty) {
+    case 'entry':
+      return entryChords;
+    case 'intermediate':
+      return intermediateChords;
+    case 'professional':
+      return professionalChords;
+    default:
+      return professionalChords;
+  }
+};
+
 // Get all available chord types
 export const getAvailableChordTypes = (): ChordType[] => {
   return [
@@ -444,6 +659,16 @@ export const getAvailableChordTypes = (): ChordType[] => {
     'dominant-13th',
     'dominant-7-sharp11',
     'half-diminished-flat9',
+    'dominant-7-flat9',
+    'dominant-7-sharp9',
+    'dominant-7-flat5',
+    'dominant-7-sharp5',
+    'minor-11th',
+    'major-11th',
+    'minor-13th',
+    'major-13th',
+    'dominant-7-flat9-sharp11',
+    'augmented-major-7th',
   ];
 };
 

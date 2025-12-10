@@ -4,7 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
-import { ChordType, getChordNotesForAudio } from '../data/chords';
+import {
+  ChordType,
+  DifficultyLevel,
+  getChordNotesForAudio,
+  getChordTypesByDifficulty,
+} from '../data/chords';
 import ChordPracticePanel from './ChordPracticePanel';
 import ChordSelectionPanel from './ChordSelectionPanel';
 import KeySelectionPanel from './KeySelectionPanel';
@@ -18,11 +23,23 @@ function ChordPracticeApp() {
   const [isPlayingForward, setIsPlayingForward] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('practice');
   const [bpm, setBpm] = useState(120);
+  type AutoPlayMode = 'off' | 'random' | 'key-priority' | 'chord-priority';
+  const [autoPlayNext, setAutoPlayNext] = useState<AutoPlayMode>('off');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('entry');
+
+  // Default chords for intermediate and professional
+  const getDefaultChords = (level: DifficultyLevel): ChordType[] => {
+    if (level === 'entry') {
+      return ['major', 'minor'];
+    }
+    // For intermediate and professional: major, major-7th, minor, minor-7th, dominant-7th
+    return ['major', 'major-7th', 'minor', 'minor-7th', 'dominant-7th'];
+  };
 
   // Key and chord selection (multiple selection)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(['C']));
   const [selectedChords, setSelectedChords] = useState<Set<ChordType>>(
-    new Set<ChordType>(['major', 'minor'])
+    new Set<ChordType>(getDefaultChords('entry'))
   );
 
   // Practice state
@@ -62,19 +79,154 @@ function ChordPracticeApp() {
   const playbackIdRef = React.useRef<number>(0);
   // Ref to track pause state for looping
   const isPausedRef = React.useRef<boolean>(false);
+  // Ref to track playing state
+  const isPlayingRef = React.useRef<boolean>(false);
   // Ref to track practice mode state for looping
   const isPracticeModeRef = React.useRef<boolean>(false);
+  // Ref to track auto-play next option
+  const autoPlayNextRef = React.useRef<AutoPlayMode>('off');
   // Refs to track current key and chord type for looping
   const currentKeyRef = React.useRef<string | null>(null);
   const currentChordTypeRef = React.useRef<ChordType | null>(null);
+  // Track previous chord to avoid repeating when auto-play next
+  const previousKeyRef = React.useRef<string | null>(null);
+  const previousChordTypeRef = React.useRef<ChordType | null>(null);
+  // Priority mode tracking
+  const currentKeyPriorityRef = React.useRef<string | null>(null);
+  const currentChordPriorityRef = React.useRef<ChordType | null>(null);
+  const playedChordsForKeyRef = React.useRef<Set<ChordType>>(new Set());
+  const playedKeysForChordRef = React.useRef<Set<string>>(new Set());
+
+  // Shuffle-and-cycle randomization refs
+  const shuffledCombinationsRef = React.useRef<
+    Array<{ key: string; chord: ChordType }>
+  >([]);
+  const combinationIndexRef = React.useRef<number>(0);
+  const lastSelectionHashRef = React.useRef<string>('');
+
+  // Fisher-Yates shuffle function
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Generate and shuffle combinations when selections change
+  const updateShuffledCombinations = () => {
+    if (selectedKeys.size === 0 || selectedChords.size === 0) {
+      shuffledCombinationsRef.current = [];
+      combinationIndexRef.current = 0;
+      return;
+    }
+
+    const keysArray = Array.from(selectedKeys);
+    const chordsArray = Array.from(selectedChords);
+    const selectionHash = `${keysArray.sort().join(',')}|${chordsArray.sort().join(',')}`;
+
+    // Only regenerate if selections changed
+    if (selectionHash !== lastSelectionHashRef.current) {
+      const allCombinations: Array<{ key: string; chord: ChordType }> = [];
+      keysArray.forEach(key => {
+        chordsArray.forEach(chord => {
+          allCombinations.push({ key, chord });
+        });
+      });
+
+      shuffledCombinationsRef.current = shuffleArray(allCombinations);
+      combinationIndexRef.current = 0;
+      lastSelectionHashRef.current = selectionHash;
+    }
+  };
+
+  // Get next combination from shuffled array (with cycle)
+  const getNextCombination = (
+    excludePrevious: boolean = false
+  ): { key: string; chord: ChordType } | null => {
+    updateShuffledCombinations();
+
+    if (shuffledCombinationsRef.current.length === 0) return null;
+
+    // If we've cycled through all combinations, reshuffle
+    if (combinationIndexRef.current >= shuffledCombinationsRef.current.length) {
+      shuffledCombinationsRef.current = shuffleArray(
+        shuffledCombinationsRef.current
+      );
+      combinationIndexRef.current = 0;
+    }
+
+    // Get available combinations (excluding previous if needed)
+    let availableCombinations = shuffledCombinationsRef.current;
+    if (
+      excludePrevious &&
+      previousKeyRef.current &&
+      previousChordTypeRef.current
+    ) {
+      availableCombinations = shuffledCombinationsRef.current.filter(
+        combo =>
+          !(
+            combo.key === previousKeyRef.current &&
+            combo.chord === previousChordTypeRef.current
+          )
+      );
+      // If filtering leaves nothing, use all combinations
+      if (availableCombinations.length === 0) {
+        availableCombinations = shuffledCombinationsRef.current;
+      }
+    }
+
+    // Find next combination from current index
+    let attempts = 0;
+    while (attempts < availableCombinations.length) {
+      const combo =
+        availableCombinations[
+          (combinationIndexRef.current + attempts) %
+            availableCombinations.length
+        ];
+      combinationIndexRef.current++;
+      if (
+        !excludePrevious ||
+        !(
+          combo.key === previousKeyRef.current &&
+          combo.chord === previousChordTypeRef.current
+        )
+      ) {
+        return combo;
+      }
+      attempts++;
+    }
+
+    // Fallback: just get next from shuffled array
+    const combo =
+      shuffledCombinationsRef.current[
+        combinationIndexRef.current % shuffledCombinationsRef.current.length
+      ];
+    combinationIndexRef.current++;
+    return combo;
+  };
 
   // Sync refs with state
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
   useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+  useEffect(() => {
     isPracticeModeRef.current = isPracticeMode;
   }, [isPracticeMode]);
+  useEffect(() => {
+    autoPlayNextRef.current = autoPlayNext;
+    // Reset priority tracking when mode changes
+    if (autoPlayNext === 'off' || autoPlayNext === 'random') {
+      currentKeyPriorityRef.current = null;
+      currentChordPriorityRef.current = null;
+      playedChordsForKeyRef.current = new Set();
+      playedKeysForChordRef.current = new Set();
+    }
+  }, [autoPlayNext]);
   useEffect(() => {
     currentKeyRef.current = currentKey;
   }, [currentKey]);
@@ -175,6 +327,98 @@ function ChordPracticeApp() {
       newSelectedChords.add(chordType);
     }
     setSelectedChords(newSelectedChords);
+  };
+
+  // Toggle all chords in a category
+  const toggleChordCategory = (chordTypes: ChordType[]) => {
+    const newSelectedChords = new Set(selectedChords);
+    const allSelected = chordTypes.every(chordType =>
+      newSelectedChords.has(chordType)
+    );
+
+    if (allSelected) {
+      // Deselect all in category
+      chordTypes.forEach(chordType => newSelectedChords.delete(chordType));
+    } else {
+      // Select all in category
+      chordTypes.forEach(chordType => newSelectedChords.add(chordType));
+    }
+    setSelectedChords(newSelectedChords);
+  };
+
+  // Handle difficulty change - filter selected chords and set default keys
+  const handleDifficultyChange = (newDifficulty: DifficultyLevel) => {
+    setDifficulty(newDifficulty);
+
+    // Filter chords
+    const availableChords = getChordTypesByDifficulty(newDifficulty);
+    const filteredChords = new Set(
+      Array.from(selectedChords).filter(chord =>
+        availableChords.includes(chord)
+      )
+    );
+
+    // For intermediate and professional, always set default chords
+    // For entry, only set defaults if no chords remain after filtering
+    if (newDifficulty === 'intermediate' || newDifficulty === 'professional') {
+      const defaultChords = getDefaultChords(newDifficulty);
+      const validDefaultChords = defaultChords.filter(chord =>
+        availableChords.includes(chord)
+      );
+      setSelectedChords(new Set(validDefaultChords));
+    } else if (filteredChords.size === 0) {
+      // Entry level: set defaults only if nothing remains
+      const defaultChords = getDefaultChords(newDifficulty);
+      const validDefaultChords = defaultChords.filter(chord =>
+        availableChords.includes(chord)
+      );
+      setSelectedChords(new Set(validDefaultChords));
+    } else {
+      setSelectedChords(filteredChords);
+    }
+
+    // Set default keys based on difficulty (all keys are always visible)
+    let defaultKeys: string[];
+    switch (newDifficulty) {
+      case 'entry':
+        defaultKeys = ['C', 'G', 'D'];
+        break;
+      case 'intermediate':
+        defaultKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+        break;
+      case 'professional':
+        defaultKeys = [
+          'C',
+          'Db',
+          'D',
+          'Eb',
+          'E',
+          'F',
+          'Gb',
+          'G',
+          'Ab',
+          'A',
+          'Bb',
+          'B',
+        ];
+        break;
+      default:
+        defaultKeys = [
+          'C',
+          'Db',
+          'D',
+          'Eb',
+          'E',
+          'F',
+          'Gb',
+          'G',
+          'Ab',
+          'A',
+          'Bb',
+          'B',
+        ];
+    }
+    setSelectedKeys(new Set(defaultKeys));
   };
 
   // Play chord
@@ -336,11 +580,19 @@ function ChordPracticeApp() {
               currentKeyRef.current === loopKey &&
               currentChordTypeRef.current === loopChordType
             ) {
-              // Alternate direction: play backward next time
-              const nextForward = !loopForward;
-              setIsPlayingForward(nextForward);
-              // Continue looping the same chord in opposite direction
-              playChord(loopKey, loopChordType, nextForward);
+              // If auto-play next is enabled, update previous chord refs and play next chord
+              if (autoPlayNextRef.current !== 'off') {
+                // Update previous chord refs to the chord that just finished
+                previousKeyRef.current = loopKey;
+                previousChordTypeRef.current = loopChordType;
+                playNextChord();
+              } else {
+                // Alternate direction: play backward next time
+                const nextForward = !loopForward;
+                setIsPlayingForward(nextForward);
+                // Continue looping the same chord in opposite direction
+                playChord(loopKey, loopChordType, nextForward);
+              }
             }
           }, 10);
 
@@ -414,20 +666,30 @@ function ChordPracticeApp() {
 
     setIsPracticeMode(true);
 
-    const keysArray = Array.from(selectedKeys);
-    const chordsArray = Array.from(selectedChords);
+    // Reset previous chord refs when starting a new practice session
+    previousKeyRef.current = null;
+    previousChordTypeRef.current = null;
+    // Reset priority mode tracking
+    currentKeyPriorityRef.current = null;
+    currentChordPriorityRef.current = null;
+    playedChordsForKeyRef.current = new Set();
+    playedKeysForChordRef.current = new Set();
 
-    // Generate all possible combinations
-    const allCombinations: Array<{ key: string; chord: ChordType }> = [];
-    keysArray.forEach(key => {
-      chordsArray.forEach(chord => {
-        allCombinations.push({ key, chord });
-      });
-    });
+    // Reset shuffle when starting practice
+    updateShuffledCombinations();
+    combinationIndexRef.current = 0;
 
-    // Pick a random combination
-    const randomCombo =
-      allCombinations[Math.floor(Math.random() * allCombinations.length)];
+    const randomCombo = getNextCombination(false);
+    if (!randomCombo) return;
+
+    // Initialize priority mode tracking
+    if (autoPlayNext === 'key-priority') {
+      currentKeyPriorityRef.current = randomCombo.key;
+      playedChordsForKeyRef.current.add(randomCombo.chord);
+    } else if (autoPlayNext === 'chord-priority') {
+      currentChordPriorityRef.current = randomCombo.chord;
+      playedKeysForChordRef.current.add(randomCombo.key);
+    }
 
     // Set new chord and play it directly
     setCurrentKey(randomCombo.key);
@@ -457,37 +719,121 @@ function ChordPracticeApp() {
       setCurrentPlayingNoteIndex(null);
     }
 
-    const keysArray = Array.from(selectedKeys);
-    const chordsArray = Array.from(selectedChords);
+    let nextCombo: { key: string; chord: ChordType } | null = null;
 
-    // Generate all possible combinations
-    const allCombinations: Array<{ key: string; chord: ChordType }> = [];
-    keysArray.forEach(key => {
-      chordsArray.forEach(chord => {
-        allCombinations.push({ key, chord });
-      });
-    });
+    // Handle different auto-play modes
+    if (autoPlayNextRef.current === 'key-priority') {
+      // Key priority: keep same key, cycle through chords
+      const currentKey = currentKeyPriorityRef.current || currentKeyRef.current;
+      if (!currentKey) {
+        // Fallback to random if no current key
+        nextCombo = getNextCombination(true);
+      } else {
+        const availableChords = Array.from(selectedChords).filter(
+          chord => !playedChordsForKeyRef.current.has(chord)
+        );
 
-    // Filter out the current combination if it exists
-    const availableCombinations = allCombinations.filter(
-      combo => !(combo.key === currentKey && combo.chord === currentChordType)
-    );
+        if (availableChords.length > 0) {
+          // Pick random from unplayed chords for this key
+          const randomChord =
+            availableChords[Math.floor(Math.random() * availableChords.length)];
+          playedChordsForKeyRef.current.add(randomChord);
+          nextCombo = { key: currentKey, chord: randomChord };
+        } else {
+          // All chords played for this key, move to next key
+          playedChordsForKeyRef.current.clear();
+          const availableKeys = Array.from(selectedKeys).filter(
+            key => key !== currentKey
+          );
+          if (availableKeys.length > 0) {
+            const nextKey =
+              availableKeys[Math.floor(Math.random() * availableKeys.length)];
+            currentKeyPriorityRef.current = nextKey;
+            const randomChord =
+              Array.from(selectedChords)[
+                Math.floor(Math.random() * selectedChords.size)
+              ];
+            playedChordsForKeyRef.current.add(randomChord);
+            nextCombo = { key: nextKey, chord: randomChord };
+          } else {
+            // Only one key, reset and start over
+            playedChordsForKeyRef.current.clear();
+            const randomChord =
+              Array.from(selectedChords)[
+                Math.floor(Math.random() * selectedChords.size)
+              ];
+            playedChordsForKeyRef.current.add(randomChord);
+            nextCombo = { key: currentKey, chord: randomChord };
+          }
+        }
+      }
+    } else if (autoPlayNextRef.current === 'chord-priority') {
+      // Chord priority: keep same chord, cycle through keys
+      const currentChord =
+        currentChordPriorityRef.current || currentChordTypeRef.current;
+      if (!currentChord) {
+        // Fallback to random if no current chord
+        nextCombo = getNextCombination(true);
+      } else {
+        const availableKeys = Array.from(selectedKeys).filter(
+          key => !playedKeysForChordRef.current.has(key)
+        );
 
-    // If no other combinations available (only one option), use it anyway
-    const combinationsToUse =
-      availableCombinations.length > 0
-        ? availableCombinations
-        : allCombinations;
+        if (availableKeys.length > 0) {
+          // Pick random from unplayed keys for this chord
+          const randomKey =
+            availableKeys[Math.floor(Math.random() * availableKeys.length)];
+          playedKeysForChordRef.current.add(randomKey);
+          nextCombo = { key: randomKey, chord: currentChord };
+        } else {
+          // All keys played for this chord, move to next chord
+          playedKeysForChordRef.current.clear();
+          const availableChords = Array.from(selectedChords).filter(
+            chord => chord !== currentChord
+          );
+          if (availableChords.length > 0) {
+            const nextChord =
+              availableChords[
+                Math.floor(Math.random() * availableChords.length)
+              ];
+            currentChordPriorityRef.current = nextChord;
+            const randomKey =
+              Array.from(selectedKeys)[
+                Math.floor(Math.random() * selectedKeys.size)
+              ];
+            playedKeysForChordRef.current.add(randomKey);
+            nextCombo = { key: randomKey, chord: nextChord };
+          } else {
+            // Only one chord, reset and start over
+            playedKeysForChordRef.current.clear();
+            const randomKey =
+              Array.from(selectedKeys)[
+                Math.floor(Math.random() * selectedKeys.size)
+              ];
+            playedKeysForChordRef.current.add(randomKey);
+            nextCombo = { key: randomKey, chord: currentChord };
+          }
+        }
+      }
+    } else {
+      // Random mode: use existing shuffle-and-cycle method
+      nextCombo = getNextCombination(true);
+    }
 
-    // Pick a random combination
-    const randomCombo =
-      combinationsToUse[Math.floor(Math.random() * combinationsToUse.length)];
+    if (!nextCombo) return;
+
+    // Update priority tracking
+    if (autoPlayNextRef.current === 'key-priority') {
+      currentKeyPriorityRef.current = nextCombo.key;
+    } else if (autoPlayNextRef.current === 'chord-priority') {
+      currentChordPriorityRef.current = nextCombo.chord;
+    }
 
     // Set new chord and play it directly (always start forward)
-    setCurrentKey(randomCombo.key);
-    setCurrentChordType(randomCombo.chord);
+    setCurrentKey(nextCombo.key);
+    setCurrentChordType(nextCombo.chord);
     setIsPlayingForward(true);
-    await playChord(randomCombo.key, randomCombo.chord, true);
+    await playChord(nextCombo.key, nextCombo.chord, true);
   };
 
   // Stop practice
@@ -535,10 +881,15 @@ function ChordPracticeApp() {
   const togglePause = () => {
     if (!currentKey || !currentChordType) return;
 
-    if (isPaused) {
+    // Use refs to get the latest state values
+    const wasPaused = isPausedRef.current;
+    const currentlyPlaying = isPlayingRef.current;
+
+    if (wasPaused) {
       // Resume: start playing
       setIsPaused(false);
-      if (!isPlaying) {
+      // Continue playing from where we left off
+      if (!currentlyPlaying) {
         playChord(currentKey, currentChordType, isPlayingForward);
       }
     } else {
@@ -599,6 +950,12 @@ function ChordPracticeApp() {
     // the latest function references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPracticeMode, currentKey, currentChordType]);
+
+  // Reset shuffle when selections change
+  useEffect(() => {
+    updateShuffledCombinations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKeys, selectedChords]);
 
   // Auto-play chord when practice mode starts and chord is set (and not paused)
   useEffect(() => {
@@ -697,16 +1054,92 @@ function ChordPracticeApp() {
           <div className="panels-container">
             {/* Desktop: Side-by-side layout */}
             <div className="left-panel desktop-only">
+              {/* Compact Difficulty Selector */}
+              <div className="compact-difficulty-selector">
+                <span className="difficulty-label">Difficulty:</span>
+                <div className="difficulty-buttons">
+                  <button
+                    className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('entry')}
+                    disabled={isPracticeMode}
+                  >
+                    Entry
+                  </button>
+                  <button
+                    className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('intermediate')}
+                    disabled={isPracticeMode}
+                  >
+                    Intermediate
+                  </button>
+                  <button
+                    className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('professional')}
+                    disabled={isPracticeMode}
+                  >
+                    Professional
+                  </button>
+                </div>
+              </div>
+
               <KeySelectionPanel
                 selectedKeys={selectedKeys}
                 onToggleKey={toggleKey}
                 disabled={isPracticeMode}
+                difficulty={difficulty}
               />
 
               <ChordSelectionPanel
                 selectedChords={selectedChords}
                 onToggleChord={toggleChord}
+                onToggleCategory={toggleChordCategory}
                 disabled={isPracticeMode}
+                difficulty={difficulty}
+              />
+            </div>
+
+            {/* Mobile: Single column layout */}
+            <div className="left-panel mobile-only">
+              {/* Compact Difficulty Selector */}
+              <div className="compact-difficulty-selector">
+                <span className="difficulty-label">Difficulty:</span>
+                <div className="difficulty-buttons">
+                  <button
+                    className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('entry')}
+                    disabled={isPracticeMode}
+                  >
+                    Entry
+                  </button>
+                  <button
+                    className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('intermediate')}
+                    disabled={isPracticeMode}
+                  >
+                    Intermediate
+                  </button>
+                  <button
+                    className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
+                    onClick={() => handleDifficultyChange('professional')}
+                    disabled={isPracticeMode}
+                  >
+                    Professional
+                  </button>
+                </div>
+              </div>
+
+              <KeySelectionPanel
+                selectedKeys={selectedKeys}
+                onToggleKey={toggleKey}
+                disabled={isPracticeMode}
+                difficulty={difficulty}
+              />
+              <ChordSelectionPanel
+                selectedChords={selectedChords}
+                onToggleChord={toggleChord}
+                onToggleCategory={toggleChordCategory}
+                disabled={isPracticeMode}
+                difficulty={difficulty}
               />
             </div>
 
@@ -727,6 +1160,8 @@ function ChordPracticeApp() {
                 selectedChords={selectedChords}
                 bpm={bpm}
                 onBpmChange={setBpm}
+                autoPlayNext={autoPlayNext}
+                onAutoPlayNextChange={setAutoPlayNext}
               />
             </div>
           </div>
@@ -740,12 +1175,15 @@ function ChordPracticeApp() {
                 selectedKeys={selectedKeys}
                 onToggleKey={toggleKey}
                 disabled={isPracticeMode}
+                difficulty={difficulty}
               />
 
               <ChordSelectionPanel
                 selectedChords={selectedChords}
                 onToggleChord={toggleChord}
+                onToggleCategory={toggleChordCategory}
                 disabled={isPracticeMode}
+                difficulty={difficulty}
               />
             </div>
           </div>
