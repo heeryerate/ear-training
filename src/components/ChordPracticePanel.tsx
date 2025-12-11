@@ -12,11 +12,10 @@ interface ChordPracticePanelProps {
   isPracticeMode: boolean;
   isPlaying: boolean;
   currentPlayingNoteIndex: number | null;
-  onStartPractice: () => void;
-  onStopPractice: () => void;
   onTogglePause: () => void;
   isPaused: boolean;
   onNextChord: () => void;
+  onReset: () => void;
   selectedKeys: Set<string>;
   selectedChords: Set<ChordType>;
   bpm: number;
@@ -33,11 +32,10 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
   isPracticeMode,
   isPlaying,
   currentPlayingNoteIndex,
-  onStartPractice,
-  onStopPractice,
   onTogglePause,
   isPaused,
   onNextChord,
+  onReset,
   selectedKeys,
   selectedChords,
   bpm,
@@ -108,7 +106,7 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
                 htmlFor="auto-play-next-select"
                 className="practice-settings-label"
               >
-                Auto-play next
+                Auto play
               </label>
               <div className="practice-settings-control">
                 <select
@@ -138,57 +136,53 @@ const ChordPracticePanel: React.FC<ChordPracticePanelProps> = ({
 
       {/* Practice Controls */}
       <div className="practice-controls">
-        {!isPracticeMode ? (
+        <div className="practice-controls-row">
           <button
-            className="control-button start-button"
-            onClick={onStartPractice}
+            className="control-button pause-play-button"
+            onClick={onTogglePause}
             disabled={
-              selectedKeys.size === 0 || selectedChords.size === 0 || isPlaying
+              !currentKey ||
+              !currentChordType ||
+              selectedKeys.size === 0 ||
+              selectedChords.size === 0
             }
           >
-            {isPlaying ? '▶ Playing...' : '▶ Start Practice'}
+            {!isPlaying || isPaused ? '▶ Play' : '⏸ Pause'}{' '}
+            <span className="key-indicator">(Space)</span>
           </button>
-        ) : (
-          <div className="practice-controls-row">
-            <button
-              className="control-button stop-button"
-              onClick={onStopPractice}
-            >
-              ⏹ Stop <span className="key-indicator">(Esc)</span>
-            </button>
-            <button
-              className="control-button pause-play-button"
-              onClick={onTogglePause}
-              disabled={!currentKey || !currentChordType}
-            >
-              {isPaused ? '▶ Play' : '⏸ Pause'}{' '}
-              <span className="key-indicator">(Space)</span>
-            </button>
-            <button
-              className="control-button next-button"
-              onClick={onNextChord}
-              disabled={selectedKeys.size === 0 || selectedChords.size === 0}
-            >
-              ⏭ Next <span className="key-indicator">(Enter)</span>
-            </button>
-          </div>
-        )}
+          <button
+            className="control-button next-button"
+            onClick={onNextChord}
+            disabled={selectedKeys.size === 0 || selectedChords.size === 0}
+          >
+            ⏭ Next <span className="key-indicator">(Enter)</span>
+          </button>
+          <button
+            className="control-button reset-button"
+            onClick={onReset}
+            disabled={selectedKeys.size === 0 || selectedChords.size === 0}
+          >
+            🔄 Reset
+          </button>
+        </div>
       </div>
 
       {/* Help Text */}
-      {!isPracticeMode && (
+      {selectedKeys.size === 0 || selectedChords.size === 0 ? (
         <div className="help-text">
           {selectedKeys.size === 0 && selectedChords.size === 0 && (
-            <p>Select at least one key and one chord to start practicing.</p>
+            <p>
+              Select at least one key and one chord, then click Next to start.
+            </p>
           )}
           {selectedKeys.size === 0 && selectedChords.size > 0 && (
-            <p>Select at least one key to start practicing.</p>
+            <p>Select at least one key, then click Next to start.</p>
           )}
           {selectedKeys.size > 0 && selectedChords.size === 0 && (
-            <p>Select at least one chord to start practicing.</p>
+            <p>Select at least one chord, then click Next to start.</p>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

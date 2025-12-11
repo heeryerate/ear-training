@@ -15,10 +15,10 @@ interface ScalePracticePanelProps {
   isPlaying: boolean;
   currentPlayingNoteIndex: number | null;
   onStartPractice: () => void;
-  onStopPractice: () => void;
   onTogglePause: () => void;
   isPaused: boolean;
   onNextScale: () => void;
+  onReset: () => void;
   selectedKeys: Set<string>;
   selectedScales: Set<ScaleType>;
   bpm: number;
@@ -29,6 +29,8 @@ interface ScalePracticePanelProps {
   ) => void;
   practiceModeType: PracticeModeType;
   onPracticeModeTypeChange: (mode: PracticeModeType) => void;
+  isPatternModeEnabled: boolean;
+  onPatternModeEnabledChange: (enabled: boolean) => void;
   patternInput: string;
   onPatternInputChange: (pattern: string) => void;
   patternSequences: string[][];
@@ -43,10 +45,10 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
   isPlaying,
   currentPlayingNoteIndex,
   onStartPractice,
-  onStopPractice,
   onTogglePause,
   isPaused,
   onNextScale,
+  onReset,
   selectedKeys,
   selectedScales,
   bpm,
@@ -55,6 +57,8 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
   onAutoPlayNextChange,
   practiceModeType,
   onPracticeModeTypeChange,
+  isPatternModeEnabled,
+  onPatternModeEnabledChange,
   patternInput,
   onPatternInputChange,
   patternSequences,
@@ -127,45 +131,8 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
     <div className="scale-practice-panel">
       <h2>🎵 Scale Practice</h2>
 
-      {/* Practice Mode Selector - Only show when not in practice */}
-      {!isPracticeMode && (
-        <div className="practice-mode-selector">
-          <label>Practice Mode:</label>
-          <div className="mode-buttons">
-            <button
-              className={`mode-button ${practiceModeType === 'regular' ? 'active' : ''}`}
-              onClick={() => onPracticeModeTypeChange('regular')}
-            >
-              Regular
-            </button>
-            <button
-              className={`mode-button ${practiceModeType === 'pattern' ? 'active' : ''}`}
-              onClick={() => onPracticeModeTypeChange('pattern')}
-            >
-              Pattern
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Pattern Input - Only show when pattern mode is selected and not in practice */}
-      {!isPracticeMode && practiceModeType === 'pattern' && (
-        <div className="pattern-input-container">
-          <label htmlFor="pattern-input">Pattern:</label>
-          <input
-            id="pattern-input"
-            type="text"
-            value={patternInput}
-            onChange={e => onPatternInputChange(e.target.value)}
-            placeholder="1 2 3 5"
-            className="pattern-input"
-          />
-          <div className="pattern-help">(1-13)</div>
-        </div>
-      )}
-
-      {/* Current Scale Display - Only show when practice is active */}
-      {isPracticeMode && currentKey && currentScaleType && (
+      {/* Current Scale Display */}
+      {currentKey && currentScaleType && (
         <div className="current-scale-display">
           <div className="scale-name-large">{scaleName}</div>
           {practiceModeType === 'regular' ? (
@@ -212,113 +179,136 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
         </div>
       )}
 
-      {/* Practice Settings - Only show during practice */}
-      {isPracticeMode && (
-        <div className="practice-settings">
-          <div className="practice-settings-content">
-            <div className="practice-settings-item">
-              <label htmlFor="bpm-slider" className="practice-settings-label">
-                BPM
-              </label>
-              <div className="practice-settings-control">
-                <span className="practice-settings-value">{bpm}</span>
-                <input
-                  id="bpm-slider"
-                  type="range"
-                  min="60"
-                  max="200"
-                  value={bpm}
-                  onChange={e => onBpmChange(parseInt(e.target.value))}
-                  className="bpm-slider"
-                />
-              </div>
-            </div>
-            <div className="practice-settings-item">
-              <label
-                htmlFor="auto-play-next-select"
-                className="practice-settings-label"
-              >
-                Auto-play next
-              </label>
-              <div className="practice-settings-control">
-                <select
-                  id="auto-play-next-select"
-                  value={autoPlayNext}
-                  onChange={e =>
-                    onAutoPlayNextChange(
-                      e.target.value as
-                        | 'off'
-                        | 'random'
-                        | 'key-priority'
-                        | 'scale-priority'
-                    )
-                  }
-                  className="auto-play-next-select"
-                >
-                  <option value="off">Off</option>
-                  <option value="random">Random</option>
-                  <option value="key-priority">Key Priority</option>
-                  <option value="scale-priority">Scale Priority</option>
-                </select>
-              </div>
+      {/* Practice Settings */}
+      <div className="practice-settings">
+        <div className="practice-settings-content">
+          <div className="practice-settings-item">
+            <label htmlFor="bpm-slider" className="practice-settings-label">
+              BPM
+            </label>
+            <div className="practice-settings-control">
+              <span className="practice-settings-value">{bpm}</span>
+              <input
+                id="bpm-slider"
+                type="range"
+                min="60"
+                max="200"
+                value={bpm}
+                onChange={e => onBpmChange(parseInt(e.target.value))}
+                className="bpm-slider"
+              />
             </div>
           </div>
+          <div className="practice-settings-item">
+            <label
+              htmlFor="auto-play-next-select"
+              className="practice-settings-label"
+            >
+              Auto play
+            </label>
+            <div className="practice-settings-control">
+              <select
+                id="auto-play-next-select"
+                value={autoPlayNext}
+                onChange={e =>
+                  onAutoPlayNextChange(
+                    e.target.value as
+                      | 'off'
+                      | 'random'
+                      | 'key-priority'
+                      | 'scale-priority'
+                  )
+                }
+                className="auto-play-next-select"
+              >
+                <option value="off">Off</option>
+                <option value="random">Random</option>
+                <option value="key-priority">Key Priority</option>
+                <option value="scale-priority">Scale Priority</option>
+              </select>
+            </div>
+          </div>
+          <div className="practice-settings-item">
+            <label className="practice-settings-label">Pattern Mode</label>
+            <div className="practice-settings-control">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={isPatternModeEnabled}
+                  onChange={e => onPatternModeEnabledChange(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          {isPatternModeEnabled && (
+            <div className="practice-settings-item">
+              <label
+                htmlFor="pattern-input"
+                className="practice-settings-label"
+              >
+                Pattern
+              </label>
+              <div className="practice-settings-control">
+                <input
+                  id="pattern-input"
+                  type="text"
+                  value={patternInput}
+                  onChange={e => onPatternInputChange(e.target.value)}
+                  placeholder="1 2 3 5"
+                  className="pattern-input"
+                />
+              </div>
+              <div className="pattern-help">(1-13, scale degrees)</div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Practice Controls */}
       <div className="practice-controls">
-        {!isPracticeMode ? (
+        <div className="practice-controls-row">
           <button
-            className="control-button start-button"
-            onClick={onStartPractice}
-            disabled={
-              selectedKeys.size === 0 || selectedScales.size === 0 || isPlaying
-            }
+            className="control-button pause-play-button"
+            onClick={onTogglePause}
+            disabled={!currentKey || !currentScaleType}
           >
-            {isPlaying ? '▶ Playing...' : '▶ Start Practice'}
+            {!isPlaying || isPaused ? '▶ Play' : '⏸ Pause'}{' '}
+            <span className="key-indicator">(Space)</span>
           </button>
-        ) : (
-          <div className="practice-controls-row">
-            <button
-              className="control-button stop-button"
-              onClick={onStopPractice}
-            >
-              ⏹ Stop <span className="key-indicator">(Esc)</span>
-            </button>
-            <button
-              className="control-button pause-play-button"
-              onClick={onTogglePause}
-              disabled={!currentKey || !currentScaleType}
-            >
-              {isPaused ? '▶ Play' : '⏸ Pause'}{' '}
-              <span className="key-indicator">(Space)</span>
-            </button>
-            <button
-              className="control-button next-button"
-              onClick={onNextScale}
-              disabled={selectedKeys.size === 0 || selectedScales.size === 0}
-            >
-              ⏭ Next <span className="key-indicator">(Enter)</span>
-            </button>
-          </div>
-        )}
+          <button
+            className="control-button next-button"
+            onClick={onNextScale}
+            disabled={selectedKeys.size === 0 || selectedScales.size === 0}
+          >
+            ⏭ Next <span className="key-indicator">(Enter)</span>
+          </button>
+          <button
+            className="control-button reset-button"
+            onClick={onReset}
+            disabled={selectedKeys.size === 0 || selectedScales.size === 0}
+          >
+            🔄 Reset
+          </button>
+        </div>
       </div>
 
       {/* Help Text */}
-      {!isPracticeMode && (
+      {!currentKey || !currentScaleType ? (
         <div className="help-text">
           {selectedKeys.size === 0 && selectedScales.size === 0 && (
-            <p>Select at least one key and one scale to start practicing.</p>
+            <p>
+              Select at least one key and one scale, then click Next to start.
+            </p>
           )}
           {selectedKeys.size === 0 && selectedScales.size > 0 && (
-            <p>Select at least one key to start practicing.</p>
+            <p>Select at least one key, then click Next to start.</p>
           )}
           {selectedKeys.size > 0 && selectedScales.size === 0 && (
-            <p>Select at least one scale to start practicing.</p>
+            <p>Select at least one scale, then click Next to start.</p>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

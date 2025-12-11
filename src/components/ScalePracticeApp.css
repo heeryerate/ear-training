@@ -546,7 +546,11 @@
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.3s ease;
@@ -557,6 +561,9 @@
   border-color: #667eea;
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
 }
 
 .pattern-help {
@@ -703,6 +710,54 @@
   transform: translateX(0);
 }
 
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch .toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 20px;
+}
+
+.toggle-switch .toggle-slider:before {
+  position: absolute;
+  content: '';
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #667eea;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
 .bpm-slider {
   width: 100%;
   max-width: 300px;
@@ -750,6 +805,178 @@
 .bpm-slider:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Practice Settings */
+.practice-settings {
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.practice-settings:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.practice-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.practice-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 2.5rem;
+}
+
+.practice-settings-label {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  white-space: nowrap;
+  width: 110px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.practice-settings-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Ensure pattern input has enough space */
+.practice-settings-item:has(.pattern-input) .practice-settings-control {
+  min-width: 200px;
+}
+
+.practice-settings-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  min-width: 2.5rem;
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.practice-settings-control .bpm-slider {
+  flex: 1;
+  max-width: none;
+  margin: 0;
+}
+
+.auto-play-next-select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+}
+
+.auto-play-next-select:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.auto-play-next-select:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+}
+
+.auto-play-next-select option {
+  background: #1a1a2e;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Pattern input in settings panel */
+.practice-settings-control .pattern-input {
+  flex: 1;
+  min-width: 200px;
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.practice-settings-control .pattern-input::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1;
+}
+
+.practice-settings-control .pattern-input::-moz-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1;
+}
+
+.practice-settings-control .pattern-input:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.practice-settings-control .pattern-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+}
+
+.practice-settings-control .pattern-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1;
+}
+
+.practice-settings-item .pattern-help {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  margin-top: 0.25rem;
+  width: 100%;
+  text-align: left;
 }
 
 /* Practice Controls */
@@ -862,6 +1089,21 @@
   transform: translateY(-3px);
   box-shadow:
     0 8px 25px rgba(17, 153, 142, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+  color: white;
+  box-shadow:
+    0 4px 15px rgba(247, 151, 30, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.reset-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 25px rgba(247, 151, 30, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
@@ -1455,17 +1697,99 @@
   }
 
   .practice-settings {
-    padding: 0.75rem;
-    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 1.25rem;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .practice-settings-content {
+    padding: 0.875rem 1rem;
+    gap: 0.875rem;
+  }
+
+  .practice-settings-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    min-height: auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .practice-settings-label {
+    width: 100%;
     font-size: 0.85rem;
-    min-width: 80px;
+    white-space: normal;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .practice-settings-control {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .practice-settings-value {
+    min-width: 2.25rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
   }
 
   .practice-settings-control .bpm-slider {
+    flex: 1;
+    min-width: 0;
     max-width: 100%;
+  }
+
+  .auto-play-next-select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.65rem;
+    padding-right: 2rem;
+  }
+
+  .practice-settings-control .pattern-input {
+    flex: 1;
+    min-width: 150px;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+  }
+
+  .practice-settings-control .pattern-input:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+  }
+
+  .practice-settings-control .pattern-input:focus {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff !important;
+  }
+
+  .practice-settings-item .pattern-help {
+    font-size: 0.65rem;
+    margin-top: 0.2rem;
   }
 
   .key-buttons {

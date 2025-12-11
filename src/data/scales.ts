@@ -711,7 +711,6 @@ export const getScaleTypesByDifficulty = (
     'minor',
     'pentatonic-major',
     'pentatonic-minor',
-    'dorian',
   ];
 
   const intermediateScales: ScaleType[] = [

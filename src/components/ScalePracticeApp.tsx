@@ -23,6 +23,7 @@ type PracticeModeType = 'regular' | 'pattern';
 
 function ScalePracticeApp() {
   const [piano, setPiano] = useState<Tone.Sampler | null>(null);
+  const [isSamplerLoaded, setIsSamplerLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isPlayingForward, setIsPlayingForward] = useState(true);
@@ -42,16 +43,36 @@ function ScalePracticeApp() {
   };
 
   // Key and scale selection (multiple selection)
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(['C']));
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+    new Set(['C', 'G'])
+  );
   const [selectedScales, setSelectedScales] = useState<Set<ScaleType>>(
     new Set<ScaleType>(getDefaultScales('entry'))
   );
 
   // Practice state
   const [isPracticeMode, setIsPracticeMode] = useState(false);
-  const [practiceModeType, setPracticeModeType] =
-    useState<PracticeModeType>('regular');
+  const [isPatternModeEnabled, setIsPatternModeEnabled] = useState(false);
   const [patternInput, setPatternInput] = useState<string>('1 2 3 5');
+
+  // Derive practice mode from pattern input: if pattern is empty/invalid, use regular mode
+  const parsePattern = (patternStr: string): number[] => {
+    return patternStr
+      .trim()
+      .split(/\s+/)
+      .map(s => parseInt(s, 10))
+      .filter(n => !isNaN(n) && n > 0 && n <= 13);
+  };
+
+  const getPracticeModeType = (): PracticeModeType => {
+    if (!isPatternModeEnabled) {
+      return 'regular';
+    }
+    const pattern = parsePattern(patternInput);
+    return pattern.length > 0 ? 'pattern' : 'regular';
+  };
+
+  const practiceModeType = getPracticeModeType();
   const [currentKey, setCurrentKey] = useState<string | null>(null);
   const [currentScaleType, setCurrentScaleType] = useState<ScaleType | null>(
     null
@@ -209,23 +230,27 @@ function ScalePracticeApp() {
   const togglePause = () => {
     if (!currentKey || !currentScaleType) return;
 
-    if (isPaused) {
-      // Resume playback
+    if (!isPlaying || isPaused) {
+      // Start or resume playback
       setIsPaused(false);
-      // Continue playing from where we left off
-      if (!isPlaying) {
-        // If not playing, start playing based on mode
-        if (practiceModeType === 'pattern') {
-          const pattern = parsePattern(patternInput);
-          if (pattern.length > 0) {
-            playPattern(currentKey, currentScaleType, pattern, 0);
-          }
+      // Start playing based on mode
+      if (isPatternModeEnabled) {
+        const pattern = parsePattern(patternInput);
+        if (pattern.length > 0) {
+          // Pattern mode: play pattern sequences
+          playPattern(currentKey, currentScaleType, pattern, 0);
         } else {
+          // Pattern mode enabled but invalid pattern, fall back to regular
           const forward = isPlayingForward;
           playScale(currentKey, currentScaleType, 0, forward);
         }
+      } else {
+        // Regular mode: play scale
+        const forward = isPlayingForward;
+        playScale(currentKey, currentScaleType, 0, forward);
       }
     } else {
+      // Pause playback
       setIsPaused(true);
       // Stop all currently playing notes
       if (piano) {
@@ -267,12 +292,6 @@ function ScalePracticeApp() {
       if (event.key === 'Enter') {
         event.preventDefault(); // Prevent form submission
         playNextScale();
-      }
-
-      // Escape: stop practice
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        stopPractice();
       }
     };
 
@@ -324,6 +343,9 @@ function ScalePracticeApp() {
   const currentScalePriorityRef = React.useRef<ScaleType | null>(null);
   const playedScalesForKeyRef = React.useRef<Set<ScaleType>>(new Set());
   const playedKeysForScaleRef = React.useRef<Set<string>>(new Set());
+  // Track previous selection sizes to detect when new items are added
+  const previousSelectedKeysSizeRef = React.useRef<number>(0);
+  const previousSelectedScalesSizeRef = React.useRef<number>(0);
 
   // Clear all pending timeouts
   const clearAllTimeouts = () => {
@@ -369,6 +391,7 @@ function ScalePracticeApp() {
       baseUrl: 'https://tonejs.github.io/audio/salamander/',
       onload: () => {
         console.log('Piano samples loaded successfully');
+        setIsSamplerLoaded(true);
       },
     }).toDestination();
 
@@ -450,29 +473,27 @@ function ScalePracticeApp() {
     );
 
     // For intermediate and professional, always set default scales
-    // For entry, only set defaults if no scales remain after filtering
+    // For entry, always reset to defaults (Major, Minor)
     if (newDifficulty === 'intermediate' || newDifficulty === 'professional') {
       const defaultScales = getDefaultScales(newDifficulty);
       const validDefaultScales = defaultScales.filter(scale =>
         availableScales.includes(scale)
       );
       setSelectedScales(new Set(validDefaultScales));
-    } else if (filteredScales.size === 0) {
-      // Entry level: set defaults only if nothing remains
+    } else {
+      // Entry level: always reset to defaults (Major, Minor)
       const defaultScales = getDefaultScales(newDifficulty);
       const validDefaultScales = defaultScales.filter(scale =>
         availableScales.includes(scale)
       );
       setSelectedScales(new Set(validDefaultScales));
-    } else {
-      setSelectedScales(filteredScales);
     }
 
     // Set default keys based on difficulty (all keys are always visible)
     let defaultKeys: string[];
     switch (newDifficulty) {
       case 'entry':
-        defaultKeys = ['C', 'G', 'D'];
+        defaultKeys = ['C', 'G'];
         break;
       case 'intermediate':
         defaultKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
@@ -527,13 +548,6 @@ function ScalePracticeApp() {
   };
 
   // Parse pattern input (e.g., "1 2 3 5" -> [1, 2, 3, 5])
-  const parsePattern = (patternStr: string): number[] => {
-    return patternStr
-      .trim()
-      .split(/\s+/)
-      .map(s => parseInt(s, 10))
-      .filter(n => !isNaN(n) && n > 0);
-  };
 
   // Generate pattern sequences from scale notes
   const generatePatternSequences = (
@@ -682,7 +696,8 @@ function ScalePracticeApp() {
             if (
               playbackStateRef.current &&
               playbackStateRef.current.playbackId === currentPlaybackId &&
-              piano
+              piano &&
+              isSamplerLoaded
             ) {
               piano.triggerAttackRelease(note, noteDuration * 0.9);
             }
@@ -744,7 +759,8 @@ function ScalePracticeApp() {
                 isPracticeModeRef.current &&
                 currentKeyRef.current === loopKey &&
                 currentScaleTypeRef.current === loopScaleType &&
-                practiceModeType === 'pattern'
+                isPatternModeEnabled &&
+                pattern.length > 0 // Pattern mode if pattern is valid
               ) {
                 // If auto-play next is enabled, play next scale
                 if (autoPlayNextRef.current !== 'off') {
@@ -832,7 +848,8 @@ function ScalePracticeApp() {
           if (
             playbackStateRef.current &&
             playbackStateRef.current.playbackId === currentPlaybackId &&
-            piano
+            piano &&
+            isSamplerLoaded
           ) {
             piano.triggerAttackRelease(note, noteDuration * 0.9);
           }
@@ -1132,35 +1149,90 @@ function ScalePracticeApp() {
     // Initialize priority mode tracking
     if (autoPlayNext === 'key-priority') {
       currentKeyPriorityRef.current = randomCombo.key;
+      playedScalesForKeyRef.current.clear();
       playedScalesForKeyRef.current.add(randomCombo.scale);
     } else if (autoPlayNext === 'scale-priority') {
       currentScalePriorityRef.current = randomCombo.scale;
+      playedKeysForScaleRef.current.clear();
       playedKeysForScaleRef.current.add(randomCombo.key);
+    } else if (autoPlayNext === 'random') {
+      // Initialize previous for random mode
+      previousKeyRef.current = randomCombo.key;
+      previousScaleTypeRef.current = randomCombo.scale;
     }
 
-    // Set new scale
+    // Set new scale (don't auto-play, wait for user to click Play)
     setCurrentKey(randomCombo.key);
     setCurrentScaleType(randomCombo.scale);
     setIsPlayingForward(true); // Always start forward
-
-    // Play based on practice mode type
-    if (practiceModeType === 'pattern') {
-      const pattern = parsePattern(patternInput);
-      if (pattern.length > 0) {
-        await playPattern(randomCombo.key, randomCombo.scale, pattern, 0);
-      }
-    } else {
-      // Regular mode: play scale (will auto-loop forward/backward)
-      await playScale(randomCombo.key, randomCombo.scale, 0, true);
-    }
+    setIsPaused(false); // Reset pause state
 
     // Start session timer after first play finishes
     setSessionStartTime(Date.now());
   };
 
+  // Reset practice session - uses current selections as pool
+  const resetPractice = () => {
+    if (selectedKeys.size === 0 || selectedScales.size === 0) return;
+
+    // Stop any current playback
+    if (isPlaying) {
+      clearAllTimeouts();
+      if (piano) {
+        piano.releaseAll();
+      }
+      setIsPlaying(false);
+      setIsPaused(false);
+      setCurrentPlayingNoteIndex(null);
+      setCurrentSequenceIndex(0);
+    }
+
+    // Reset all tracking refs
+    previousKeyRef.current = null;
+    previousScaleTypeRef.current = null;
+    currentKeyPriorityRef.current = null;
+    currentScalePriorityRef.current = null;
+    playedScalesForKeyRef.current = new Set();
+    playedKeysForScaleRef.current = new Set();
+
+    // Reset shuffle using current selections
+    updateShuffledCombinations();
+    combinationIndexRef.current = 0;
+
+    // Pick a new random combination
+    const randomCombo = getNextCombination(false);
+    if (!randomCombo) return;
+
+    // Initialize priority mode tracking
+    if (autoPlayNext === 'key-priority') {
+      currentKeyPriorityRef.current = randomCombo.key;
+      playedScalesForKeyRef.current.clear();
+      playedScalesForKeyRef.current.add(randomCombo.scale);
+    } else if (autoPlayNext === 'scale-priority') {
+      currentScalePriorityRef.current = randomCombo.scale;
+      playedKeysForScaleRef.current.clear();
+      playedKeysForScaleRef.current.add(randomCombo.key);
+    } else if (autoPlayNext === 'random') {
+      previousKeyRef.current = randomCombo.key;
+      previousScaleTypeRef.current = randomCombo.scale;
+    }
+
+    // Set new scale
+    setCurrentKey(randomCombo.key);
+    setCurrentScaleType(randomCombo.scale);
+    setIsPlayingForward(true);
+    setIsPaused(false);
+  };
+
   // Play next random scale
   const playNextScale = async () => {
     if (selectedKeys.size === 0 || selectedScales.size === 0) return;
+
+    // If practice hasn't started yet, start it now
+    if (!isPracticeMode) {
+      await startPractice();
+      return;
+    }
 
     // Stop current playback if playing
     if (isPlaying) {
@@ -1181,58 +1253,124 @@ function ScalePracticeApp() {
 
     // Handle different auto-play modes
     if (autoPlayNextRef.current === 'key-priority') {
-      // Key priority: keep same key, cycle through scales
-      const currentKey = currentKeyPriorityRef.current || currentKeyRef.current;
-      if (!currentKey) {
-        // Fallback to random if no current key
-        nextCombo = getNextCombination(true);
+      // Key priority: keep same key, randomize scale type
+      // Change key only after all selected scales for that key have been played at least once
+      let currentKey = currentKeyPriorityRef.current || currentKeyRef.current;
+
+      // Validate current key is still in selections
+      if (currentKey && !selectedKeys.has(currentKey)) {
+        currentKey = null;
+        currentKeyPriorityRef.current = null;
+        playedScalesForKeyRef.current.clear();
+      }
+
+      // Always filter played sets to only include items currently in selections
+      // This ensures new items are immediately available
+      const playedScalesToKeep = new Set<ScaleType>();
+      playedScalesForKeyRef.current.forEach(scale => {
+        if (selectedScales.has(scale)) {
+          playedScalesToKeep.add(scale);
+        }
+      });
+      playedScalesForKeyRef.current = playedScalesToKeep;
+
+      if (!currentKey || selectedKeys.size === 0 || selectedScales.size === 0) {
+        // Initialize: pick first key and first scale
+        if (selectedKeys.size > 0 && selectedScales.size > 0) {
+          const firstKey = Array.from(selectedKeys)[0];
+          const firstScale = Array.from(selectedScales)[0];
+          currentKeyPriorityRef.current = firstKey;
+          playedScalesForKeyRef.current.clear();
+          playedScalesForKeyRef.current.add(firstScale);
+          nextCombo = { key: firstKey, scale: firstScale };
+        }
       } else {
+        // Get all currently selected scales and filter out only those that were played
+        // New scales are automatically available since they're not in the played set
         const availableScales = Array.from(selectedScales).filter(
           scale => !playedScalesForKeyRef.current.has(scale)
         );
 
+        // Check if there are other keys available (including newly added keys)
+        const otherKeys = Array.from(selectedKeys).filter(
+          key => key !== currentKey
+        );
+
+        // If there are other keys available and we've played at least one scale,
+        // consider switching to a new key (this ensures newly added keys are picked up)
+        // But prioritize finishing scales for current key first
         if (availableScales.length > 0) {
           // Pick random from unplayed scales for this key
           const randomScale =
             availableScales[Math.floor(Math.random() * availableScales.length)];
           playedScalesForKeyRef.current.add(randomScale);
           nextCombo = { key: currentKey, scale: randomScale };
-        } else {
+        } else if (otherKeys.length > 0) {
           // All scales played for this key, move to next key
+          // Available keys includes newly added keys
           playedScalesForKeyRef.current.clear();
-          const availableKeys = Array.from(selectedKeys).filter(
-            key => key !== currentKey
-          );
-          if (availableKeys.length > 0) {
-            const nextKey =
-              availableKeys[Math.floor(Math.random() * availableKeys.length)];
-            currentKeyPriorityRef.current = nextKey;
-            const randomScale =
-              Array.from(selectedScales)[
-                Math.floor(Math.random() * selectedScales.size)
-              ];
-            playedScalesForKeyRef.current.add(randomScale);
-            nextCombo = { key: nextKey, scale: randomScale };
-          } else {
-            // Only one key, reset and start over
-            playedScalesForKeyRef.current.clear();
-            const randomScale =
-              Array.from(selectedScales)[
-                Math.floor(Math.random() * selectedScales.size)
-              ];
-            playedScalesForKeyRef.current.add(randomScale);
-            nextCombo = { key: currentKey, scale: randomScale };
-          }
+          const nextKey =
+            otherKeys[Math.floor(Math.random() * otherKeys.length)];
+          currentKeyPriorityRef.current = nextKey;
+          // Pick random scale for the new key from all available scales
+          const randomScale =
+            Array.from(selectedScales)[
+              Math.floor(Math.random() * selectedScales.size)
+            ];
+          playedScalesForKeyRef.current.add(randomScale);
+          nextCombo = { key: nextKey, scale: randomScale };
+        } else {
+          // Only one key (current key), reset and start over with all scales available
+          // This includes newly added scales
+          playedScalesForKeyRef.current.clear();
+          const randomScale =
+            Array.from(selectedScales)[
+              Math.floor(Math.random() * selectedScales.size)
+            ];
+          playedScalesForKeyRef.current.add(randomScale);
+          nextCombo = { key: currentKey, scale: randomScale };
         }
       }
     } else if (autoPlayNextRef.current === 'scale-priority') {
-      // Scale priority: keep same scale, cycle through keys
-      const currentScale =
+      // Scale priority: keep same scale type, randomize key
+      // Change scale only after all selected keys for that scale have been played at least once
+      let currentScale =
         currentScalePriorityRef.current || currentScaleTypeRef.current;
-      if (!currentScale) {
-        // Fallback to random if no current scale
-        nextCombo = getNextCombination(true);
+
+      // Validate current scale is still in selections
+      if (currentScale && !selectedScales.has(currentScale)) {
+        currentScale = null;
+        currentScalePriorityRef.current = null;
+        playedKeysForScaleRef.current.clear();
+      }
+
+      // Always filter played sets to only include items currently in selections
+      // This ensures new items are immediately available
+      const playedKeysToKeep = new Set<string>();
+      playedKeysForScaleRef.current.forEach(key => {
+        if (selectedKeys.has(key)) {
+          playedKeysToKeep.add(key);
+        }
+      });
+      playedKeysForScaleRef.current = playedKeysToKeep;
+
+      if (
+        !currentScale ||
+        selectedKeys.size === 0 ||
+        selectedScales.size === 0
+      ) {
+        // Initialize: pick first scale and first key
+        if (selectedKeys.size > 0 && selectedScales.size > 0) {
+          const firstScale = Array.from(selectedScales)[0];
+          const firstKey = Array.from(selectedKeys)[0];
+          currentScalePriorityRef.current = firstScale;
+          playedKeysForScaleRef.current.clear();
+          playedKeysForScaleRef.current.add(firstKey);
+          nextCombo = { key: firstKey, scale: firstScale };
+        }
       } else {
+        // Get all currently selected keys and filter out only those that were played
+        // New keys are automatically available since they're not in the played set
         const availableKeys = Array.from(selectedKeys).filter(
           key => !playedKeysForScaleRef.current.has(key)
         );
@@ -1245,16 +1383,20 @@ function ScalePracticeApp() {
           nextCombo = { key: randomKey, scale: currentScale };
         } else {
           // All keys played for this scale, move to next scale
+          // Check for available scales (including newly added ones)
           playedKeysForScaleRef.current.clear();
           const availableScales = Array.from(selectedScales).filter(
             scale => scale !== currentScale
           );
           if (availableScales.length > 0) {
+            // Pick random scale from available scales (includes newly added scales)
             const nextScale =
               availableScales[
                 Math.floor(Math.random() * availableScales.length)
               ];
             currentScalePriorityRef.current = nextScale;
+            // Pick random key for the new scale from all available keys
+            // This includes newly added keys
             const randomKey =
               Array.from(selectedKeys)[
                 Math.floor(Math.random() * selectedKeys.size)
@@ -1262,7 +1404,8 @@ function ScalePracticeApp() {
             playedKeysForScaleRef.current.add(randomKey);
             nextCombo = { key: randomKey, scale: nextScale };
           } else {
-            // Only one scale, reset and start over
+            // Only one scale (current scale), reset and start over with all keys available
+            // This includes newly added keys
             playedKeysForScaleRef.current.clear();
             const randomKey =
               Array.from(selectedKeys)[
@@ -1273,12 +1416,99 @@ function ScalePracticeApp() {
           }
         }
       }
+    } else if (autoPlayNextRef.current === 'random') {
+      // Random mode: randomize both key and scale, but don't repeat previous combination
+      // Always build from current selections to include newly added keys/scales
+      const allCombinations: Array<{ key: string; scale: ScaleType }> = [];
+      selectedKeys.forEach(key => {
+        selectedScales.forEach(scale => {
+          allCombinations.push({ key, scale });
+        });
+      });
+
+      // Validate previous combination is still in current selections
+      // If not, clear it so new items can be selected
+      if (
+        previousKeyRef.current &&
+        previousScaleTypeRef.current &&
+        (!selectedKeys.has(previousKeyRef.current) ||
+          !selectedScales.has(previousScaleTypeRef.current))
+      ) {
+        previousKeyRef.current = null;
+        previousScaleTypeRef.current = null;
+      }
+
+      // Filter out the previous combination (same key and scale) if it's still valid
+      let availableCombinations = allCombinations;
+      if (
+        previousKeyRef.current &&
+        previousScaleTypeRef.current &&
+        selectedKeys.has(previousKeyRef.current) &&
+        selectedScales.has(previousScaleTypeRef.current)
+      ) {
+        availableCombinations = allCombinations.filter(
+          combo =>
+            !(
+              combo.key === previousKeyRef.current &&
+              combo.scale === previousScaleTypeRef.current
+            )
+        );
+      }
+
+      // If filtering leaves nothing (only one combination), use all
+      if (availableCombinations.length === 0) {
+        availableCombinations = allCombinations;
+      }
+
+      // Pick random from available (includes newly added keys/scales)
+      nextCombo =
+        availableCombinations[
+          Math.floor(Math.random() * availableCombinations.length)
+        ];
     } else {
-      // Random mode: use existing shuffle-and-cycle method
-      nextCombo = getNextCombination(true);
+      // Off mode: should not be called, but fallback - use current selections
+      // Build combinations from current selections
+      const allCombinations: Array<{ key: string; scale: ScaleType }> = [];
+      selectedKeys.forEach(key => {
+        selectedScales.forEach(scale => {
+          allCombinations.push({ key, scale });
+        });
+      });
+
+      if (allCombinations.length > 0) {
+        // Filter out current combination if it exists
+        const available = allCombinations.filter(
+          combo =>
+            !(combo.key === currentKey && combo.scale === currentScaleType)
+        );
+        nextCombo =
+          available.length > 0
+            ? available[Math.floor(Math.random() * available.length)]
+            : allCombinations[
+                Math.floor(Math.random() * allCombinations.length)
+              ];
+      }
     }
 
     if (!nextCombo) return;
+
+    // Validate that the combination is from current selections
+    if (
+      !selectedKeys.has(nextCombo.key) ||
+      !selectedScales.has(nextCombo.scale)
+    ) {
+      // If invalid, pick a random valid combination
+      const validKeys = Array.from(selectedKeys);
+      const validScales = Array.from(selectedScales);
+      if (validKeys.length > 0 && validScales.length > 0) {
+        nextCombo = {
+          key: validKeys[Math.floor(Math.random() * validKeys.length)],
+          scale: validScales[Math.floor(Math.random() * validScales.length)],
+        };
+      } else {
+        return; // No valid selections
+      }
+    }
 
     // Update priority tracking
     if (autoPlayNextRef.current === 'key-priority') {
@@ -1287,18 +1517,29 @@ function ScalePracticeApp() {
       currentScalePriorityRef.current = nextCombo.scale;
     }
 
+    // Update previous combination for random mode
+    if (autoPlayNextRef.current === 'random') {
+      previousKeyRef.current = nextCombo.key;
+      previousScaleTypeRef.current = nextCombo.scale;
+    }
+
     // Set new scale and play it directly
     setCurrentKey(nextCombo.key);
     setCurrentScaleType(nextCombo.scale);
     setIsPlayingForward(true);
 
     // Play based on practice mode type
-    if (practiceModeType === 'pattern') {
+    if (isPatternModeEnabled) {
       const pattern = parsePattern(patternInput);
       if (pattern.length > 0) {
+        // Pattern mode: play pattern sequences
         await playPattern(nextCombo.key, nextCombo.scale, pattern, 0);
+      } else {
+        // Pattern mode enabled but invalid pattern, fall back to regular
+        await playScale(nextCombo.key, nextCombo.scale, 0, true);
       }
     } else {
+      // Regular mode: play scale (will auto-loop forward/backward)
       await playScale(nextCombo.key, nextCombo.scale, 0, true);
     }
   };
@@ -1391,23 +1632,111 @@ function ScalePracticeApp() {
     playNextScale,
   ]);
 
-  // Auto-play scale when it changes during practice
+  // Handle selection changes - update tracking refs so next scale uses latest selections
+  // Don't interrupt current playback, changes will apply to the next scale
   useEffect(() => {
+    // Detect if selections changed (added or removed)
+    const keysChanged =
+      selectedKeys.size !== previousSelectedKeysSizeRef.current;
+    const scalesChanged =
+      selectedScales.size !== previousSelectedScalesSizeRef.current;
+
+    // Update previous sizes
+    previousSelectedKeysSizeRef.current = selectedKeys.size;
+    previousSelectedScalesSizeRef.current = selectedScales.size;
+
+    // If selections changed, update tracking refs to ensure next scale uses latest selections
+    if (keysChanged || scalesChanged) {
+      // Clear played sets so new items are immediately available for next selection
+      if (autoPlayNext === 'key-priority') {
+        if (scalesChanged) {
+          // Scales changed - clear played scales so new ones are available
+          playedScalesForKeyRef.current.clear();
+        }
+        if (keysChanged) {
+          // Keys changed - clear played scales to allow switching to new keys
+          playedScalesForKeyRef.current.clear();
+        }
+      } else if (autoPlayNext === 'scale-priority') {
+        if (keysChanged) {
+          // Keys changed - clear played keys so new ones are available
+          playedKeysForScaleRef.current.clear();
+        }
+        if (scalesChanged) {
+          // Scales changed - clear played keys to allow switching to new scales
+          playedKeysForScaleRef.current.clear();
+        }
+      } else if (autoPlayNext === 'random') {
+        // In random mode, clear previous refs if they're no longer in selections
+        if (previousKeyRef.current && previousScaleTypeRef.current) {
+          if (
+            !selectedKeys.has(previousKeyRef.current) ||
+            !selectedScales.has(previousScaleTypeRef.current)
+          ) {
+            previousKeyRef.current = null;
+            previousScaleTypeRef.current = null;
+          }
+        }
+      }
+
+      // If practice hasn't started and we have valid selections, start it
+      if (!isPracticeMode && selectedKeys.size > 0 && selectedScales.size > 0) {
+        startPractice();
+        return;
+      }
+    }
+
+    // If current combination is invalid (removed from selections), switch to valid one
+    // But only if not currently playing (to avoid interrupting playback)
     if (
       isPracticeMode &&
       currentKey &&
       currentScaleType &&
-      !isPlaying &&
-      !isPaused &&
-      piano
+      (selectedKeys.size > 0 || selectedScales.size > 0) &&
+      !isPlaying
     ) {
-      // Always start forward when scale changes
-      setIsPlayingForward(true);
-      // Use the main playScale function
-      playScale(currentKey, currentScaleType, 0, true);
+      // Check if current combination is still valid
+      const isCurrentKeyValid = selectedKeys.has(currentKey);
+      const isCurrentScaleValid = selectedScales.has(currentScaleType);
+
+      // If current combination is invalid, switch to a valid one
+      if (!isCurrentKeyValid || !isCurrentScaleValid) {
+        // Find a valid combination
+        let newKey = currentKey;
+        let newScale = currentScaleType;
+
+        if (!isCurrentKeyValid) {
+          // Current key is not in selection, pick first available
+          newKey = Array.from(selectedKeys)[0];
+        }
+
+        if (!isCurrentScaleValid) {
+          // Current scale is not in selection, pick first available
+          newScale = Array.from(selectedScales)[0];
+        }
+
+        // Update to new combination (only when not playing)
+        setCurrentKey(newKey);
+        setCurrentScaleType(newScale);
+        setIsPlayingForward(true);
+
+        // Reset priority tracking if needed
+        if (autoPlayNext === 'key-priority') {
+          currentKeyPriorityRef.current = newKey;
+          playedScalesForKeyRef.current.clear();
+          playedScalesForKeyRef.current.add(newScale);
+        } else if (autoPlayNext === 'scale-priority') {
+          currentScalePriorityRef.current = newScale;
+          playedKeysForScaleRef.current.clear();
+          playedKeysForScaleRef.current.add(newKey);
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentKey, currentScaleType, isPracticeMode, piano]);
+  }, [selectedKeys, selectedScales, isPracticeMode, isPlaying]);
+
+  // Don't auto-play when scale changes - user must click Play button
+  // This useEffect is removed to prevent auto-play
 
   // Calculate total practice time
   const totalPracticeTime = practiceSessions.reduce(
@@ -1494,28 +1823,25 @@ function ScalePracticeApp() {
             <div className="left-panel desktop-only">
               {/* Compact Difficulty Selector */}
               <div className="compact-difficulty-selector">
-                <span className="difficulty-label">Difficulty:</span>
+                <span className="difficulty-label">Options:</span>
                 <div className="difficulty-buttons">
                   <button
                     className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('entry')}
-                    disabled={isPracticeMode}
                   >
-                    Entry
+                    Basic
                   </button>
                   <button
                     className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('intermediate')}
-                    disabled={isPracticeMode}
                   >
-                    Intermediate
+                    Standard
                   </button>
                   <button
                     className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('professional')}
-                    disabled={isPracticeMode}
                   >
-                    Professional
+                    Full
                   </button>
                 </div>
               </div>
@@ -1523,7 +1849,7 @@ function ScalePracticeApp() {
               <KeySelectionPanel
                 selectedKeys={selectedKeys}
                 onToggleKey={toggleKey}
-                disabled={isPracticeMode}
+                disabled={isPlaying}
                 difficulty={difficulty}
               />
 
@@ -1531,7 +1857,7 @@ function ScalePracticeApp() {
                 selectedScales={selectedScales}
                 onToggleScale={toggleScale}
                 onToggleCategory={toggleScaleCategory}
-                disabled={isPracticeMode}
+                disabled={isPlaying}
                 difficulty={difficulty}
               />
             </div>
@@ -1545,10 +1871,10 @@ function ScalePracticeApp() {
                 isPlaying={isPlaying}
                 currentPlayingNoteIndex={currentPlayingNoteIndex}
                 onStartPractice={startPractice}
-                onStopPractice={stopPractice}
                 onTogglePause={togglePause}
                 isPaused={isPaused}
                 onNextScale={playNextScale}
+                onReset={resetPractice}
                 selectedKeys={selectedKeys}
                 selectedScales={selectedScales}
                 bpm={bpm}
@@ -1556,7 +1882,9 @@ function ScalePracticeApp() {
                 autoPlayNext={autoPlayNext}
                 onAutoPlayNextChange={setAutoPlayNext}
                 practiceModeType={practiceModeType}
-                onPracticeModeTypeChange={setPracticeModeType}
+                onPracticeModeTypeChange={() => {}} // No longer needed, mode is derived from pattern
+                isPatternModeEnabled={isPatternModeEnabled}
+                onPatternModeEnabledChange={setIsPatternModeEnabled}
                 patternInput={patternInput}
                 onPatternInputChange={setPatternInput}
                 patternSequences={patternSequences}
@@ -1575,28 +1903,25 @@ function ScalePracticeApp() {
               <div className="mobile-only">
                 {/* Compact Difficulty Selector */}
                 <div className="compact-difficulty-selector">
-                  <span className="difficulty-label">Difficulty:</span>
+                  <span className="difficulty-label">Options:</span>
                   <div className="difficulty-buttons">
                     <button
                       className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('entry')}
-                      disabled={isPracticeMode}
                     >
-                      Entry
+                      Basic
                     </button>
                     <button
                       className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('intermediate')}
-                      disabled={isPracticeMode}
                     >
-                      Intermediate
+                      Standard
                     </button>
                     <button
                       className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('professional')}
-                      disabled={isPracticeMode}
                     >
-                      Professional
+                      Full
                     </button>
                   </div>
                 </div>
@@ -1604,7 +1929,7 @@ function ScalePracticeApp() {
                 <KeySelectionPanel
                   selectedKeys={selectedKeys}
                   onToggleKey={toggleKey}
-                  disabled={isPracticeMode}
+                  disabled={isPlaying}
                   difficulty={difficulty}
                 />
 
@@ -1612,7 +1937,7 @@ function ScalePracticeApp() {
                   selectedScales={selectedScales}
                   onToggleScale={toggleScale}
                   onToggleCategory={toggleScaleCategory}
-                  disabled={isPracticeMode}
+                  disabled={isPlaying}
                   difficulty={difficulty}
                 />
               </div>

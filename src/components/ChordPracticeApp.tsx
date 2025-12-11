@@ -37,12 +37,14 @@ function ChordPracticeApp() {
   };
 
   // Key and chord selection (multiple selection)
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(['C']));
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+    new Set(['C', 'G'])
+  );
   const [selectedChords, setSelectedChords] = useState<Set<ChordType>>(
     new Set<ChordType>(getDefaultChords('entry'))
   );
 
-  // Practice state
+  // Practice state - will be auto-started when selections are available
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [currentKey, setCurrentKey] = useState<string | null>(null);
   const [currentChordType, setCurrentChordType] = useState<ChordType | null>(
@@ -96,6 +98,9 @@ function ChordPracticeApp() {
   const currentChordPriorityRef = React.useRef<ChordType | null>(null);
   const playedChordsForKeyRef = React.useRef<Set<ChordType>>(new Set());
   const playedKeysForChordRef = React.useRef<Set<string>>(new Set());
+  // Track previous selection sizes to detect changes
+  const previousSelectedKeysSizeRef = React.useRef<number>(0);
+  const previousSelectedChordsSizeRef = React.useRef<number>(0);
 
   // Shuffle-and-cycle randomization refs
   const shuffledCombinationsRef = React.useRef<
@@ -381,7 +386,7 @@ function ChordPracticeApp() {
     let defaultKeys: string[];
     switch (newDifficulty) {
       case 'entry':
-        defaultKeys = ['C', 'G', 'D'];
+        defaultKeys = ['C', 'G'];
         break;
       case 'intermediate':
         defaultKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
@@ -691,19 +696,77 @@ function ChordPracticeApp() {
       playedKeysForChordRef.current.add(randomCombo.key);
     }
 
-    // Set new chord and play it directly
+    // Set new chord (don't auto-play, wait for user to click Play)
     setCurrentKey(randomCombo.key);
     setCurrentChordType(randomCombo.chord);
-    // Wait for chord to finish playing before starting timer
-    await playChord(randomCombo.key, randomCombo.chord, true);
+    setIsPaused(false); // Reset pause state
 
-    // Start session timer after first chord finishes
+    // Start session timer
     setSessionStartTime(Date.now());
+  };
+
+  // Reset practice session - uses current selections as pool
+  const resetPractice = () => {
+    if (selectedKeys.size === 0 || selectedChords.size === 0) return;
+
+    // Stop any current playback
+    if (isPlaying) {
+      clearAllTimeouts();
+      if (piano) {
+        piano.releaseAll();
+      }
+      setIsPlaying(false);
+      setIsPaused(false);
+      setCurrentPlayingNoteIndex(null);
+    }
+
+    // Reset all tracking refs
+    previousKeyRef.current = null;
+    previousChordTypeRef.current = null;
+    currentKeyPriorityRef.current = null;
+    currentChordPriorityRef.current = null;
+    playedChordsForKeyRef.current = new Set();
+    playedKeysForChordRef.current = new Set();
+
+    // Reset shuffle using current selections
+    updateShuffledCombinations();
+    combinationIndexRef.current = 0;
+
+    // Pick a new random combination
+    const randomCombo = getNextCombination(false);
+    if (!randomCombo) return;
+
+    // Initialize priority mode tracking
+    if (autoPlayNext === 'key-priority') {
+      currentKeyPriorityRef.current = randomCombo.key;
+      playedChordsForKeyRef.current.clear();
+      playedChordsForKeyRef.current.add(randomCombo.chord);
+    } else if (autoPlayNext === 'chord-priority') {
+      currentChordPriorityRef.current = randomCombo.chord;
+      playedKeysForChordRef.current.clear();
+      playedKeysForChordRef.current.add(randomCombo.key);
+    }
+
+    // Set new chord
+    setCurrentKey(randomCombo.key);
+    setCurrentChordType(randomCombo.chord);
+    setIsPaused(false);
   };
 
   // Play next random chord
   const playNextChord = async () => {
     if (selectedKeys.size === 0 || selectedChords.size === 0) return;
+
+    // Validate current refs are still in selections (similar to playNextScale)
+    if (currentKeyRef.current && !selectedKeys.has(currentKeyRef.current)) {
+      currentKeyRef.current = null;
+    }
+    if (
+      currentChordTypeRef.current &&
+      !selectedChords.has(currentChordTypeRef.current)
+    ) {
+      currentChordTypeRef.current = null;
+    }
 
     // Stop current playback if playing
     if (isPlaying) {
@@ -721,12 +784,42 @@ function ChordPracticeApp() {
 
     let nextCombo: { key: string; chord: ChordType } | null = null;
 
+    // Debug logging
+    console.log('[ChordPractice] playNextChord called:', {
+      selectedKeysSize: selectedKeys.size,
+      selectedChordsSize: selectedChords.size,
+      currentKeyRef: currentKeyRef.current,
+      currentChordTypeRef: currentChordTypeRef.current,
+      currentKeyPriorityRef: currentKeyPriorityRef.current,
+      currentChordPriorityRef: currentChordPriorityRef.current,
+      autoPlayNext: autoPlayNextRef.current,
+      playedChordsForKeySize: playedChordsForKeyRef.current.size,
+      playedKeysForChordSize: playedKeysForChordRef.current.size,
+    });
+
     // Handle different auto-play modes
     if (autoPlayNextRef.current === 'key-priority') {
       // Key priority: keep same key, cycle through chords
-      const currentKey = currentKeyPriorityRef.current || currentKeyRef.current;
-      if (!currentKey) {
-        // Fallback to random if no current key
+      let currentKey = currentKeyPriorityRef.current || currentKeyRef.current;
+
+      // Validate current key is still in selections
+      if (currentKey && !selectedKeys.has(currentKey)) {
+        currentKey = null;
+        currentKeyPriorityRef.current = null;
+        playedChordsForKeyRef.current.clear();
+      }
+
+      // Always filter played sets to only include items currently in selections
+      const playedChordsToKeep = new Set<ChordType>();
+      playedChordsForKeyRef.current.forEach(chord => {
+        if (selectedChords.has(chord)) {
+          playedChordsToKeep.add(chord);
+        }
+      });
+      playedChordsForKeyRef.current = playedChordsToKeep;
+
+      if (!currentKey || selectedKeys.size === 0 || selectedChords.size === 0) {
+        // Fallback to random if no current key or no selections
         nextCombo = getNextCombination(true);
       } else {
         const availableChords = Array.from(selectedChords).filter(
@@ -769,10 +862,31 @@ function ChordPracticeApp() {
       }
     } else if (autoPlayNextRef.current === 'chord-priority') {
       // Chord priority: keep same chord, cycle through keys
-      const currentChord =
+      let currentChord =
         currentChordPriorityRef.current || currentChordTypeRef.current;
-      if (!currentChord) {
-        // Fallback to random if no current chord
+
+      // Validate current chord is still in selections
+      if (currentChord && !selectedChords.has(currentChord)) {
+        currentChord = null;
+        currentChordPriorityRef.current = null;
+        playedKeysForChordRef.current.clear();
+      }
+
+      // Always filter played sets to only include items currently in selections
+      const playedKeysToKeep = new Set<string>();
+      playedKeysForChordRef.current.forEach(key => {
+        if (selectedKeys.has(key)) {
+          playedKeysToKeep.add(key);
+        }
+      });
+      playedKeysForChordRef.current = playedKeysToKeep;
+
+      if (
+        !currentChord ||
+        selectedKeys.size === 0 ||
+        selectedChords.size === 0
+      ) {
+        // Fallback to random if no current chord or no selections
         nextCombo = getNextCombination(true);
       } else {
         const availableKeys = Array.from(selectedKeys).filter(
@@ -820,7 +934,17 @@ function ChordPracticeApp() {
       nextCombo = getNextCombination(true);
     }
 
-    if (!nextCombo) return;
+    if (!nextCombo) {
+      console.log('[ChordPractice] playNextChord: No valid combination found');
+      return;
+    }
+
+    // Debug logging
+    console.log('[ChordPractice] playNextChord: Selected combination:', {
+      key: nextCombo.key,
+      chord: nextCombo.chord,
+      autoPlayNext: autoPlayNextRef.current,
+    });
 
     // Update priority tracking
     if (autoPlayNextRef.current === 'key-priority') {
@@ -828,6 +952,10 @@ function ChordPracticeApp() {
     } else if (autoPlayNextRef.current === 'chord-priority') {
       currentChordPriorityRef.current = nextCombo.chord;
     }
+
+    // Update refs
+    currentKeyRef.current = nextCombo.key;
+    currentChordTypeRef.current = nextCombo.chord;
 
     // Set new chord and play it directly (always start forward)
     setCurrentKey(nextCombo.key);
@@ -885,13 +1013,10 @@ function ChordPracticeApp() {
     const wasPaused = isPausedRef.current;
     const currentlyPlaying = isPlayingRef.current;
 
-    if (wasPaused) {
-      // Resume: start playing
+    if (!currentlyPlaying || wasPaused) {
+      // Start or resume playback
       setIsPaused(false);
-      // Continue playing from where we left off
-      if (!currentlyPlaying) {
-        playChord(currentKey, currentChordType, isPlayingForward);
-      }
+      playChord(currentKey, currentChordType, isPlayingForward);
     } else {
       // Pause: stop current playback
       setIsPaused(true);
@@ -933,12 +1058,6 @@ function ChordPracticeApp() {
         event.preventDefault(); // Prevent form submission
         playNextChord();
       }
-
-      // Escape: stop practice
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        stopPractice();
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -951,29 +1070,127 @@ function ChordPracticeApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPracticeMode, currentKey, currentChordType]);
 
-  // Reset shuffle when selections change
+  // Handle selection changes - update tracking refs so next chord uses latest selections
+  // Don't interrupt current playback, changes will apply to the next chord
   useEffect(() => {
-    updateShuffledCombinations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedKeys, selectedChords]);
+    // Detect if selections changed (added or removed)
+    const keysChanged =
+      selectedKeys.size !== previousSelectedKeysSizeRef.current;
+    const chordsChanged =
+      selectedChords.size !== previousSelectedChordsSizeRef.current;
 
-  // Auto-play chord when practice mode starts and chord is set (and not paused)
-  useEffect(() => {
+    // Update previous sizes
+    previousSelectedKeysSizeRef.current = selectedKeys.size;
+    previousSelectedChordsSizeRef.current = selectedChords.size;
+
+    // If selections changed, update tracking refs to ensure next chord uses latest selections
+    if (keysChanged || chordsChanged) {
+      // Clear played sets so new items are immediately available for next selection
+      if (autoPlayNext === 'key-priority') {
+        if (chordsChanged) {
+          // Chords changed - clear played chords so new ones are available
+          playedChordsForKeyRef.current.clear();
+        }
+        if (keysChanged) {
+          // Keys changed - clear played chords to allow switching to new keys
+          playedChordsForKeyRef.current.clear();
+        }
+      } else if (autoPlayNext === 'chord-priority') {
+        if (keysChanged) {
+          // Keys changed - clear played keys so new ones are available
+          playedKeysForChordRef.current.clear();
+        }
+        if (chordsChanged) {
+          // Chords changed - clear played keys to allow switching to new chords
+          playedKeysForChordRef.current.clear();
+        }
+      } else if (autoPlayNext === 'random') {
+        // In random mode, clear previous refs if they're no longer in selections
+        if (previousKeyRef.current && previousChordTypeRef.current) {
+          if (
+            !selectedKeys.has(previousKeyRef.current) ||
+            !selectedChords.has(previousChordTypeRef.current)
+          ) {
+            previousKeyRef.current = null;
+            previousChordTypeRef.current = null;
+          }
+        }
+      }
+
+      // Reset shuffle when selections change
+      updateShuffledCombinations();
+
+      // If practice hasn't started and we have valid selections, start it
+      if (!isPracticeMode && selectedKeys.size > 0 && selectedChords.size > 0) {
+        startPractice();
+        return;
+      }
+
+      // Debug logging
+      console.log('[ChordPractice] Selections changed:', {
+        keysChanged,
+        chordsChanged,
+        selectedKeysSize: selectedKeys.size,
+        selectedChordsSize: selectedChords.size,
+        currentKey,
+        currentChordType,
+        isPlaying,
+        autoPlayNext,
+      });
+    }
+
+    // If current combination is invalid (removed from selections), switch to valid one
+    // But only if not currently playing (to avoid interrupting playback)
+    // When playing, let the current chord finish - the next chord will use valid selections
     if (
       isPracticeMode &&
       currentKey &&
       currentChordType &&
-      piano &&
-      !isPlaying &&
-      !isPaused
+      selectedKeys.size > 0 &&
+      selectedChords.size > 0 &&
+      !isPlaying
     ) {
-      const playCurrentChord = async () => {
-        await playChord(currentKey, currentChordType, true);
-      };
-      playCurrentChord();
+      // Check if current combination is still valid
+      const isCurrentKeyValid = selectedKeys.has(currentKey);
+      const isCurrentChordValid = selectedChords.has(currentChordType);
+
+      // If current combination is invalid, switch to a valid one
+      if (!isCurrentKeyValid || !isCurrentChordValid) {
+        // Find a valid combination
+        let newKey = currentKey;
+        let newChord = currentChordType;
+
+        if (!isCurrentKeyValid) {
+          // Current key is not in selection, pick first available
+          newKey = Array.from(selectedKeys)[0];
+        }
+
+        if (!isCurrentChordValid) {
+          // Current chord is not in selection, pick first available
+          newChord = Array.from(selectedChords)[0];
+        }
+
+        // Update to new combination (only when not playing)
+        setCurrentKey(newKey);
+        setCurrentChordType(newChord);
+
+        // Reset priority tracking if needed
+        if (autoPlayNext === 'key-priority') {
+          currentKeyPriorityRef.current = newKey;
+          playedChordsForKeyRef.current.clear();
+          playedChordsForKeyRef.current.add(newChord);
+        } else if (autoPlayNext === 'chord-priority') {
+          currentChordPriorityRef.current = newChord;
+          playedKeysForChordRef.current.clear();
+          playedKeysForChordRef.current.add(newKey);
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentKey, currentChordType, isPracticeMode, piano]);
+  }, [selectedKeys, selectedChords, isPracticeMode, isPlaying]);
+
+  // Don't auto-play when chord changes - user must click Play button
+  // This useEffect is removed to prevent auto-play
 
   // Calculate total practice time
   const totalPracticeTime = practiceSessions.reduce(
@@ -1056,28 +1273,25 @@ function ChordPracticeApp() {
             <div className="left-panel desktop-only">
               {/* Compact Difficulty Selector */}
               <div className="compact-difficulty-selector">
-                <span className="difficulty-label">Difficulty:</span>
+                <span className="difficulty-label">Options:</span>
                 <div className="difficulty-buttons">
                   <button
                     className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('entry')}
-                    disabled={isPracticeMode}
                   >
-                    Entry
+                    Basic
                   </button>
                   <button
                     className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('intermediate')}
-                    disabled={isPracticeMode}
                   >
-                    Intermediate
+                    Standard
                   </button>
                   <button
                     className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
                     onClick={() => handleDifficultyChange('professional')}
-                    disabled={isPracticeMode}
                   >
-                    Professional
+                    Full
                   </button>
                 </div>
               </div>
@@ -1085,7 +1299,7 @@ function ChordPracticeApp() {
               <KeySelectionPanel
                 selectedKeys={selectedKeys}
                 onToggleKey={toggleKey}
-                disabled={isPracticeMode}
+                disabled={isPlaying}
                 difficulty={difficulty}
               />
 
@@ -1093,7 +1307,7 @@ function ChordPracticeApp() {
                 selectedChords={selectedChords}
                 onToggleChord={toggleChord}
                 onToggleCategory={toggleChordCategory}
-                disabled={isPracticeMode}
+                disabled={isPlaying}
                 difficulty={difficulty}
               />
             </div>
@@ -1106,11 +1320,10 @@ function ChordPracticeApp() {
                 isPracticeMode={isPracticeMode}
                 isPlaying={isPlaying}
                 currentPlayingNoteIndex={currentPlayingNoteIndex}
-                onStartPractice={startPractice}
-                onStopPractice={stopPractice}
                 onTogglePause={togglePause}
                 isPaused={isPaused}
                 onNextChord={playNextChord}
+                onReset={resetPractice}
                 selectedKeys={selectedKeys}
                 selectedChords={selectedChords}
                 bpm={bpm}
@@ -1130,28 +1343,25 @@ function ChordPracticeApp() {
               <div className="mobile-only">
                 {/* Compact Difficulty Selector */}
                 <div className="compact-difficulty-selector">
-                  <span className="difficulty-label">Difficulty:</span>
+                  <span className="difficulty-label">Options:</span>
                   <div className="difficulty-buttons">
                     <button
                       className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('entry')}
-                      disabled={isPracticeMode}
                     >
-                      Entry
+                      Basic
                     </button>
                     <button
                       className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('intermediate')}
-                      disabled={isPracticeMode}
                     >
-                      Intermediate
+                      Standard
                     </button>
                     <button
                       className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
                       onClick={() => handleDifficultyChange('professional')}
-                      disabled={isPracticeMode}
                     >
-                      Professional
+                      Full
                     </button>
                   </div>
                 </div>
@@ -1159,7 +1369,7 @@ function ChordPracticeApp() {
                 <KeySelectionPanel
                   selectedKeys={selectedKeys}
                   onToggleKey={toggleKey}
-                  disabled={isPracticeMode}
+                  disabled={isPlaying}
                   difficulty={difficulty}
                 />
 
@@ -1167,7 +1377,7 @@ function ChordPracticeApp() {
                   selectedChords={selectedChords}
                   onToggleChord={toggleChord}
                   onToggleCategory={toggleChordCategory}
-                  disabled={isPracticeMode}
+                  disabled={isPlaying}
                   difficulty={difficulty}
                 />
               </div>
