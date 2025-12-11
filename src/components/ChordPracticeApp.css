@@ -138,6 +138,30 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Settings Container */
+.settings-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.settings-panel {
+  padding: 1.5rem;
+}
+
+.settings-panel h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.settings-panel p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2rem;
+}
+
 /* Compact Difficulty Selector */
 .compact-difficulty-selector {
   display: flex;
@@ -163,6 +187,23 @@
   display: flex;
   gap: 0.5rem;
   flex: 1;
+}
+
+@media (max-width: 768px) {
+  .compact-difficulty-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .compact-difficulty-selector .difficulty-label {
+    text-align: center;
+  }
+
+  .compact-difficulty-selector .difficulty-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 .compact-difficulty-selector .difficulty-button {
@@ -459,6 +500,11 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
+}
+
+/* Remove header border when header is removed */
+.practice-settings:not(:has(.practice-settings-header)) .practice-settings-content {
+  padding-top: 1rem;
 }
 
 .practice-settings-item {
@@ -1062,7 +1108,7 @@
   .control-button {
     flex: 1;
     padding: 0.875rem 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     min-width: 0;
   }
 
@@ -1108,16 +1154,179 @@
     gap: 0.25rem;
   }
 
+  .settings-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 0.5rem;
+  }
+
+  .settings-panel {
+    padding: 1rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .settings-panel h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    word-wrap: break-word;
+  }
+
+  .settings-panel p {
+    font-size: 0.85rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+  }
+
   .key-selection-panel,
   .chord-selection-panel {
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 1.25rem 0.75rem;
+    margin-bottom: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .key-selection-panel h2,
   .chord-selection-panel h2 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    margin-bottom: 0.9rem;
+    display: block !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    word-wrap: break-word;
+  }
+
+  .key-buttons {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+  }
+
+  .key-button {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .chord-category-group {
+    padding: 0.9rem 0.5rem;
     margin-bottom: 1rem;
-    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chord-buttons {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chord-button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chord-category-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem;
+    flex-wrap: nowrap !important;
+    margin-bottom: 0.625rem;
+  }
+
+  .chord-selection-panel h3,
+  .chord-category-group h3,
+  .chord-category-title {
+    font-size: 0.7rem !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+    display: inline-block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chord-category-group .category-select-all {
+    flex-shrink: 0 !important;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+  }
+
+  /* Practice Settings Panel - Fix overflow */
+  .practice-settings {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 1.25rem;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .practice-settings-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .practice-settings-title {
+    font-size: 0.85rem;
+  }
+
+  .practice-settings-content {
+    padding: 0.875rem 1rem;
+    gap: 0.875rem;
+  }
+
+  .practice-settings-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    min-height: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .practice-settings-label {
+    width: 100%;
+    font-size: 0.85rem;
+    white-space: normal;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .practice-settings-control {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .practice-settings-value {
+    min-width: 2.25rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .practice-settings-control .bpm-slider {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .auto-play-next-select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.65rem;
+    padding-right: 2rem;
   }
 }

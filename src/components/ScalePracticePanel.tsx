@@ -215,9 +215,6 @@ const ScalePracticePanel: React.FC<ScalePracticePanelProps> = ({
       {/* Practice Settings - Only show during practice */}
       {isPracticeMode && (
         <div className="practice-settings">
-          <div className="practice-settings-header">
-            <span className="practice-settings-title">⚙️ Settings</span>
-          </div>
           <div className="practice-settings-content">
             <div className="practice-settings-item">
               <label htmlFor="bpm-slider" className="practice-settings-label">

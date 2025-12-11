@@ -1098,51 +1098,6 @@ function ChordPracticeApp() {
               />
             </div>
 
-            {/* Mobile: Single column layout */}
-            <div className="left-panel mobile-only">
-              {/* Compact Difficulty Selector */}
-              <div className="compact-difficulty-selector">
-                <span className="difficulty-label">Difficulty:</span>
-                <div className="difficulty-buttons">
-                  <button
-                    className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
-                    onClick={() => handleDifficultyChange('entry')}
-                    disabled={isPracticeMode}
-                  >
-                    Entry
-                  </button>
-                  <button
-                    className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
-                    onClick={() => handleDifficultyChange('intermediate')}
-                    disabled={isPracticeMode}
-                  >
-                    Intermediate
-                  </button>
-                  <button
-                    className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
-                    onClick={() => handleDifficultyChange('professional')}
-                    disabled={isPracticeMode}
-                  >
-                    Professional
-                  </button>
-                </div>
-              </div>
-
-              <KeySelectionPanel
-                selectedKeys={selectedKeys}
-                onToggleKey={toggleKey}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
-              <ChordSelectionPanel
-                selectedChords={selectedChords}
-                onToggleChord={toggleChord}
-                onToggleCategory={toggleChordCategory}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
-            </div>
-
             {/* Practice Interface - Full width on mobile */}
             <div className="right-panel">
               <ChordPracticePanel
@@ -1171,20 +1126,51 @@ function ChordPracticeApp() {
               <h2>⚙️ Practice Settings</h2>
               <p>Configure your key and chord selection preferences.</p>
 
-              <KeySelectionPanel
-                selectedKeys={selectedKeys}
-                onToggleKey={toggleKey}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
+              {/* Mobile: Show difficulty selector, key selection, and chord selection */}
+              <div className="mobile-only">
+                {/* Compact Difficulty Selector */}
+                <div className="compact-difficulty-selector">
+                  <span className="difficulty-label">Difficulty:</span>
+                  <div className="difficulty-buttons">
+                    <button
+                      className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('entry')}
+                      disabled={isPracticeMode}
+                    >
+                      Entry
+                    </button>
+                    <button
+                      className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('intermediate')}
+                      disabled={isPracticeMode}
+                    >
+                      Intermediate
+                    </button>
+                    <button
+                      className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('professional')}
+                      disabled={isPracticeMode}
+                    >
+                      Professional
+                    </button>
+                  </div>
+                </div>
 
-              <ChordSelectionPanel
-                selectedChords={selectedChords}
-                onToggleChord={toggleChord}
-                onToggleCategory={toggleChordCategory}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
+                <KeySelectionPanel
+                  selectedKeys={selectedKeys}
+                  onToggleKey={toggleKey}
+                  disabled={isPracticeMode}
+                  difficulty={difficulty}
+                />
+
+                <ChordSelectionPanel
+                  selectedChords={selectedChords}
+                  onToggleChord={toggleChord}
+                  onToggleCategory={toggleChordCategory}
+                  disabled={isPracticeMode}
+                  difficulty={difficulty}
+                />
+              </div>
             </div>
           </div>
         ) : (

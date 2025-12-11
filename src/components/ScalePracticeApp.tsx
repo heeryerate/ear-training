@@ -1571,20 +1571,51 @@ function ScalePracticeApp() {
               <h2>⚙️ Practice Settings</h2>
               <p>Configure your key and scale selection preferences.</p>
 
-              <KeySelectionPanel
-                selectedKeys={selectedKeys}
-                onToggleKey={toggleKey}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
+              {/* Mobile: Show difficulty selector, key selection, and scale selection */}
+              <div className="mobile-only">
+                {/* Compact Difficulty Selector */}
+                <div className="compact-difficulty-selector">
+                  <span className="difficulty-label">Difficulty:</span>
+                  <div className="difficulty-buttons">
+                    <button
+                      className={`difficulty-button ${difficulty === 'entry' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('entry')}
+                      disabled={isPracticeMode}
+                    >
+                      Entry
+                    </button>
+                    <button
+                      className={`difficulty-button ${difficulty === 'intermediate' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('intermediate')}
+                      disabled={isPracticeMode}
+                    >
+                      Intermediate
+                    </button>
+                    <button
+                      className={`difficulty-button ${difficulty === 'professional' ? 'active' : ''}`}
+                      onClick={() => handleDifficultyChange('professional')}
+                      disabled={isPracticeMode}
+                    >
+                      Professional
+                    </button>
+                  </div>
+                </div>
 
-              <ScaleSelectionPanel
-                selectedScales={selectedScales}
-                onToggleScale={toggleScale}
-                onToggleCategory={toggleScaleCategory}
-                disabled={isPracticeMode}
-                difficulty={difficulty}
-              />
+                <KeySelectionPanel
+                  selectedKeys={selectedKeys}
+                  onToggleKey={toggleKey}
+                  disabled={isPracticeMode}
+                  difficulty={difficulty}
+                />
+
+                <ScaleSelectionPanel
+                  selectedScales={selectedScales}
+                  onToggleScale={toggleScale}
+                  onToggleCategory={toggleScaleCategory}
+                  disabled={isPracticeMode}
+                  difficulty={difficulty}
+                />
+              </div>
             </div>
           </div>
         ) : (

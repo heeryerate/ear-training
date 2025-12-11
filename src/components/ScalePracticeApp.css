@@ -5,6 +5,65 @@
   margin: 0 auto;
 }
 
+/* Panels Container Layout */
+.panels-container {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.left-panel {
+  flex: 0 0 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.right-panel {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .panels-container {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    flex: 1;
+    width: 100%;
+  }
+
+  .right-panel {
+    width: 100%;
+  }
+}
+
+/* Settings Container */
+.settings-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.settings-panel {
+  padding: 1.5rem;
+}
+
+.settings-panel h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.settings-panel p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2rem;
+}
+
 /* Compact Difficulty Selector */
 .compact-difficulty-selector {
   display: flex;
@@ -30,6 +89,23 @@
   display: flex;
   gap: 0.5rem;
   flex: 1;
+}
+
+@media (max-width: 768px) {
+  .compact-difficulty-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .compact-difficulty-selector .difficulty-label {
+    text-align: center;
+  }
+
+  .compact-difficulty-selector .difficulty-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 .compact-difficulty-selector .difficulty-button {
@@ -159,10 +235,10 @@
 }
 
 .scale-selection-panel h3 {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 0.625rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .scale-selector {
@@ -182,9 +258,9 @@
 }
 
 .scale-category-title {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
 }
 
@@ -1346,14 +1422,38 @@
 }
 
 /* Mobile responsiveness */
+/* Mobile/Desktop utility classes */
 @media (max-width: 1024px) {
+  .desktop-only {
+    display: none;
+  }
+
   /* Hide keyboard shortcuts on mobile devices (iPhone/iPad) */
   .key-indicator {
     display: none;
   }
 }
 
+@media (min-width: 1025px) {
+  .mobile-only {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
+  .settings-panel {
+    padding: 1rem;
+  }
+
+  .settings-panel h2 {
+    font-size: 1.5rem;
+  }
+
+  .settings-panel p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
   .practice-settings {
     padding: 0.75rem;
     margin-bottom: 1rem;
@@ -1383,9 +1483,34 @@
     margin-bottom: 1rem;
   }
 
-  .scale-category-group h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.8rem;
+  .scale-category-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem;
+    flex-wrap: nowrap !important;
+    margin-bottom: 0.625rem;
+  }
+
+  .scale-selection-panel h3,
+  .scale-category-group h3,
+  .scale-category-title {
+    font-size: 1.0rem !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+    display: inline-block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .scale-category-group .category-select-all {
+    flex-shrink: 0 !important;
+    width: 20px;
+    height: 20px;
+    margin: 0;
   }
 
   .scale-category-group .scale-buttons {
@@ -1401,8 +1526,29 @@
   }
 
   .scale-practice-panel {
-    padding: 1.5rem;
-    margin: 0 1rem;
+    padding: 1.25rem 1rem;
+    margin: 0 0.75rem;
+  }
+
+  .current-scale-display {
+    padding: 1.25rem 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+  }
+
+  .scale-name-large {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .scale-notes-display {
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
+
+  .scale-note-display {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9rem;
   }
 
   .practice-controls-row {
@@ -1414,7 +1560,7 @@
   .control-button {
     flex: 1;
     padding: 0.875rem 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     min-width: 0;
   }
 
@@ -1501,6 +1647,11 @@
   .scale-selection-panel h2 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
-    display: block;
+    display: block !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
   }
 }

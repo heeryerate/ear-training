@@ -372,70 +372,188 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .menu-container {
-    padding: 1.5rem 1rem;
+    padding: 1rem 1rem 2rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 4.5rem;
   }
 
   .menu-container::before {
     display: none;
   }
+
+  .menu-content {
+    width: 100%;
+  }
   
   .menu-title {
-    font-size: 2.75rem;
-    margin-bottom: 1rem;
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
   
   .menu-description {
-    font-size: 1.1rem;
-    margin-bottom: 3rem;
+    font-size: 1rem;
+    margin-bottom: 2.25rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.95);
   }
   
   .menu-items {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
   }
   
   .menu-item {
     flex-direction: column;
     text-align: center;
-    padding: 2rem 1.5rem;
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+    min-height: auto;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .menu-item:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow:
+      0 8px 28px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   
   .menu-item-thumbnail {
     margin-right: 0;
-    margin-bottom: 1.5rem;
-    width: 120px;
-    height: 120px;
+    margin-bottom: 1rem;
+    width: 80px;
+    height: 80px;
+  }
+
+  .thumbnail-content {
+    border-radius: 14px;
+    box-shadow:
+      inset 0 1px 4px rgba(255, 255, 255, 0.2),
+      0 2px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .thumbnail-icon {
+    font-size: 1.6rem;
+    top: 0.35rem;
+    opacity: 0.95;
+  }
+
+  .thumbnail-preview {
+    bottom: 0.6rem;
+  }
+
+  .preview-note,
+  .preview-scale,
+  .preview-chord,
+  .preview-beat {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .preview-clef {
+    font-size: 1.5rem !important;
   }
   
   .menu-item-content {
     text-align: center;
+    width: 100%;
   }
 
   .menu-item-content h3 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+    margin-bottom: 0.65rem;
+    line-height: 1.25;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
   
   .menu-item-status {
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
+  }
+
+  .status-badge {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.68rem;
+    border-radius: 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  .status-features {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    max-width: 100%;
   }
   
   .menu-item-arrow {
     margin-left: 0;
-    margin-top: 1rem;
-    font-size: 1.5rem;
+    margin-top: 0.6rem;
+    font-size: 1.3rem;
+    transform: rotate(90deg);
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .menu-item:hover .menu-item-arrow {
+    transform: rotate(90deg) translateY(4px);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .menu-footer {
+    margin-top: 2rem;
   }
 
   .footer-content {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.7rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.72rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .footer-content p {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .footer-icon {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .footer-bottom {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .footer-inline {
+    font-size: 0.82rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .email-link,
+  .coffee-link {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .email-link:hover,
+  .coffee-link:hover {
+    color: rgba(255, 255, 255, 0.95);
   }
 }
