@@ -4,20 +4,18 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
-import {
-  ChordType,
-  DifficultyLevel,
-  getChordNotesForAudio,
-  getChordTypesByDifficulty,
-} from '../data/chords';
+import { ChordType, getChordNotesForAudio } from '../data/chords';
+import { useChordPracticeAudio } from '../hooks/useChordPracticeAudio';
+import { useChordPracticeRandomization } from '../hooks/useChordPracticeRandomization';
+import { useChordPracticeSelection } from '../hooks/useChordPracticeSelection';
 import ChordPracticePanel from './ChordPracticePanel';
+import ChordPracticeProgress from './ChordPracticeProgress';
 import ChordSelectionPanel from './ChordSelectionPanel';
 import KeySelectionPanel from './KeySelectionPanel';
 
 type ActiveTab = 'practice' | 'progress' | 'settings';
 
 function ChordPracticeApp() {
-  const [piano, setPiano] = useState<Tone.Sampler | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isPlayingForward, setIsPlayingForward] = useState(true);
@@ -25,24 +23,36 @@ function ChordPracticeApp() {
   const [bpm, setBpm] = useState(120);
   type AutoPlayMode = 'off' | 'random' | 'key-priority' | 'chord-priority';
   const [autoPlayNext, setAutoPlayNext] = useState<AutoPlayMode>('off');
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>('entry');
 
-  // Default chords for intermediate and professional
-  const getDefaultChords = (level: DifficultyLevel): ChordType[] => {
-    if (level === 'entry') {
-      return ['major', 'minor'];
-    }
-    // For intermediate and professional: major, major-7th, minor, minor-7th, dominant-7th
-    return ['major', 'major-7th', 'minor', 'minor-7th', 'dominant-7th'];
-  };
+  // Audio management
+  const {
+    piano,
+    timeoutRefs,
+    playbackStateRef,
+    playbackIdRef,
+    clearAllTimeouts,
+    initializeAudio,
+  } = useChordPracticeAudio();
 
-  // Key and chord selection (multiple selection)
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
-    new Set(['C', 'G'])
-  );
-  const [selectedChords, setSelectedChords] = useState<Set<ChordType>>(
-    new Set<ChordType>(getDefaultChords('entry'))
-  );
+  // Selection management
+  const {
+    selectedKeys,
+    selectedChords,
+    difficulty,
+    setSelectedKeys,
+    setSelectedChords,
+    toggleKey,
+    toggleChord,
+    toggleChordCategory,
+    handleDifficultyChange,
+  } = useChordPracticeSelection();
+
+  // Randomization
+  const {
+    getNextCombination,
+    updateShuffledCombinations,
+    resetCombinationIndex,
+  } = useChordPracticeRandomization(selectedKeys, selectedChords);
 
   // Practice state - will be auto-started when selections are available
   const [isPracticeMode, setIsPracticeMode] = useState(false);
@@ -66,19 +76,6 @@ function ChordPracticeApp() {
   >([]);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
-  // Store timeout IDs for cleanup
-  const timeoutRefs = React.useRef<number[]>([]);
-  // Store playback state for BPM adjustment
-  const playbackStateRef = React.useRef<{
-    startTime: number;
-    chordNotes: string[];
-    currentKey: string;
-    currentChordType: ChordType;
-    startBpm: number;
-    playbackId: number;
-  } | null>(null);
-  // Playback ID counter to invalidate old scheduled notes
-  const playbackIdRef = React.useRef<number>(0);
   // Ref to track pause state for looping
   const isPausedRef = React.useRef<boolean>(false);
   // Ref to track playing state
@@ -101,116 +98,6 @@ function ChordPracticeApp() {
   // Track previous selection sizes to detect changes
   const previousSelectedKeysSizeRef = React.useRef<number>(0);
   const previousSelectedChordsSizeRef = React.useRef<number>(0);
-
-  // Shuffle-and-cycle randomization refs
-  const shuffledCombinationsRef = React.useRef<
-    Array<{ key: string; chord: ChordType }>
-  >([]);
-  const combinationIndexRef = React.useRef<number>(0);
-  const lastSelectionHashRef = React.useRef<string>('');
-
-  // Fisher-Yates shuffle function
-  const shuffleArray = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
-
-  // Generate and shuffle combinations when selections change
-  const updateShuffledCombinations = () => {
-    if (selectedKeys.size === 0 || selectedChords.size === 0) {
-      shuffledCombinationsRef.current = [];
-      combinationIndexRef.current = 0;
-      return;
-    }
-
-    const keysArray = Array.from(selectedKeys);
-    const chordsArray = Array.from(selectedChords);
-    const selectionHash = `${keysArray.sort().join(',')}|${chordsArray.sort().join(',')}`;
-
-    // Only regenerate if selections changed
-    if (selectionHash !== lastSelectionHashRef.current) {
-      const allCombinations: Array<{ key: string; chord: ChordType }> = [];
-      keysArray.forEach(key => {
-        chordsArray.forEach(chord => {
-          allCombinations.push({ key, chord });
-        });
-      });
-
-      shuffledCombinationsRef.current = shuffleArray(allCombinations);
-      combinationIndexRef.current = 0;
-      lastSelectionHashRef.current = selectionHash;
-    }
-  };
-
-  // Get next combination from shuffled array (with cycle)
-  const getNextCombination = (
-    excludePrevious: boolean = false
-  ): { key: string; chord: ChordType } | null => {
-    updateShuffledCombinations();
-
-    if (shuffledCombinationsRef.current.length === 0) return null;
-
-    // If we've cycled through all combinations, reshuffle
-    if (combinationIndexRef.current >= shuffledCombinationsRef.current.length) {
-      shuffledCombinationsRef.current = shuffleArray(
-        shuffledCombinationsRef.current
-      );
-      combinationIndexRef.current = 0;
-    }
-
-    // Get available combinations (excluding previous if needed)
-    let availableCombinations = shuffledCombinationsRef.current;
-    if (
-      excludePrevious &&
-      previousKeyRef.current &&
-      previousChordTypeRef.current
-    ) {
-      availableCombinations = shuffledCombinationsRef.current.filter(
-        combo =>
-          !(
-            combo.key === previousKeyRef.current &&
-            combo.chord === previousChordTypeRef.current
-          )
-      );
-      // If filtering leaves nothing, use all combinations
-      if (availableCombinations.length === 0) {
-        availableCombinations = shuffledCombinationsRef.current;
-      }
-    }
-
-    // Find next combination from current index
-    let attempts = 0;
-    while (attempts < availableCombinations.length) {
-      const combo =
-        availableCombinations[
-          (combinationIndexRef.current + attempts) %
-            availableCombinations.length
-        ];
-      combinationIndexRef.current++;
-      if (
-        !excludePrevious ||
-        !(
-          combo.key === previousKeyRef.current &&
-          combo.chord === previousChordTypeRef.current
-        )
-      ) {
-        return combo;
-      }
-      attempts++;
-    }
-
-    // Fallback: just get next from shuffled array
-    const combo =
-      shuffledCombinationsRef.current[
-        combinationIndexRef.current % shuffledCombinationsRef.current.length
-      ];
-    combinationIndexRef.current++;
-    return combo;
-  };
 
   // Sync refs with state
   useEffect(() => {
@@ -238,193 +125,6 @@ function ChordPracticeApp() {
   useEffect(() => {
     currentChordTypeRef.current = currentChordType;
   }, [currentChordType]);
-
-  // Clear all pending timeouts
-  const clearAllTimeouts = () => {
-    timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId));
-    timeoutRefs.current = [];
-  };
-
-  // Initialize piano sampler
-  useEffect(() => {
-    const newPiano = new Tone.Sampler({
-      urls: {
-        A0: 'A0.mp3',
-        C1: 'C1.mp3',
-        'D#1': 'Ds1.mp3',
-        'F#1': 'Fs1.mp3',
-        A1: 'A1.mp3',
-        C2: 'C2.mp3',
-        'D#2': 'Ds2.mp3',
-        'F#2': 'Fs2.mp3',
-        A2: 'A2.mp3',
-        C3: 'C3.mp3',
-        'D#3': 'Ds3.mp3',
-        'F#3': 'Fs3.mp3',
-        A3: 'A3.mp3',
-        C4: 'C4.mp3',
-        'D#4': 'Ds4.mp3',
-        'F#4': 'Fs4.mp3',
-        A4: 'A4.mp3',
-        C5: 'C5.mp3',
-        'D#5': 'Ds5.mp3',
-        'F#5': 'Fs5.mp3',
-        A5: 'A5.mp3',
-        C6: 'C6.mp3',
-        'D#6': 'Ds6.mp3',
-        'F#6': 'Fs6.mp3',
-        A6: 'A6.mp3',
-        C7: 'C7.mp3',
-        'D#7': 'Ds7.mp3',
-        'F#7': 'Fs7.mp3',
-        A7: 'A7.mp3',
-        C8: 'C8.mp3',
-      },
-      baseUrl: 'https://tonejs.github.io/audio/salamander/',
-      onload: () => {
-        console.log('Piano samples loaded successfully');
-      },
-    }).toDestination();
-
-    setPiano(newPiano);
-
-    return () => {
-      // Cleanup: clear all timeouts and dispose piano
-      clearAllTimeouts();
-      newPiano.dispose();
-    };
-  }, []);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      clearAllTimeouts();
-    };
-  }, []);
-
-  // Mobile-friendly audio initialization
-  const initializeAudio = async () => {
-    try {
-      await Tone.start();
-      console.log(`Audio context initialized: ${Tone.context.state}`);
-    } catch (error) {
-      console.error('Error initializing audio:', error);
-    }
-  };
-
-  // Toggle key selection
-  const toggleKey = (key: string) => {
-    const newSelectedKeys = new Set(selectedKeys);
-    if (newSelectedKeys.has(key)) {
-      newSelectedKeys.delete(key);
-    } else {
-      newSelectedKeys.add(key);
-    }
-    setSelectedKeys(newSelectedKeys);
-  };
-
-  // Toggle chord selection
-  const toggleChord = (chordType: ChordType) => {
-    const newSelectedChords = new Set(selectedChords);
-    if (newSelectedChords.has(chordType)) {
-      newSelectedChords.delete(chordType);
-    } else {
-      newSelectedChords.add(chordType);
-    }
-    setSelectedChords(newSelectedChords);
-  };
-
-  // Toggle all chords in a category
-  const toggleChordCategory = (chordTypes: ChordType[]) => {
-    const newSelectedChords = new Set(selectedChords);
-    const allSelected = chordTypes.every(chordType =>
-      newSelectedChords.has(chordType)
-    );
-
-    if (allSelected) {
-      // Deselect all in category
-      chordTypes.forEach(chordType => newSelectedChords.delete(chordType));
-    } else {
-      // Select all in category
-      chordTypes.forEach(chordType => newSelectedChords.add(chordType));
-    }
-    setSelectedChords(newSelectedChords);
-  };
-
-  // Handle difficulty change - filter selected chords and set default keys
-  const handleDifficultyChange = (newDifficulty: DifficultyLevel) => {
-    setDifficulty(newDifficulty);
-
-    // Filter chords
-    const availableChords = getChordTypesByDifficulty(newDifficulty);
-    const filteredChords = new Set(
-      Array.from(selectedChords).filter(chord =>
-        availableChords.includes(chord)
-      )
-    );
-
-    // For intermediate and professional, always set default chords
-    // For entry, only set defaults if no chords remain after filtering
-    if (newDifficulty === 'intermediate' || newDifficulty === 'professional') {
-      const defaultChords = getDefaultChords(newDifficulty);
-      const validDefaultChords = defaultChords.filter(chord =>
-        availableChords.includes(chord)
-      );
-      setSelectedChords(new Set(validDefaultChords));
-    } else if (filteredChords.size === 0) {
-      // Entry level: set defaults only if nothing remains
-      const defaultChords = getDefaultChords(newDifficulty);
-      const validDefaultChords = defaultChords.filter(chord =>
-        availableChords.includes(chord)
-      );
-      setSelectedChords(new Set(validDefaultChords));
-    } else {
-      setSelectedChords(filteredChords);
-    }
-
-    // Set default keys based on difficulty (all keys are always visible)
-    let defaultKeys: string[];
-    switch (newDifficulty) {
-      case 'entry':
-        defaultKeys = ['C', 'G'];
-        break;
-      case 'intermediate':
-        defaultKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-        break;
-      case 'professional':
-        defaultKeys = [
-          'C',
-          'Db',
-          'D',
-          'Eb',
-          'E',
-          'F',
-          'Gb',
-          'G',
-          'Ab',
-          'A',
-          'Bb',
-          'B',
-        ];
-        break;
-      default:
-        defaultKeys = [
-          'C',
-          'Db',
-          'D',
-          'Eb',
-          'E',
-          'F',
-          'Gb',
-          'G',
-          'Ab',
-          'A',
-          'Bb',
-          'B',
-        ];
-    }
-    setSelectedKeys(new Set(defaultKeys));
-  };
 
   // Play chord
   const playChord = async (
@@ -682,9 +382,13 @@ function ChordPracticeApp() {
 
     // Reset shuffle when starting practice
     updateShuffledCombinations();
-    combinationIndexRef.current = 0;
+    resetCombinationIndex();
 
-    const randomCombo = getNextCombination(false);
+    const randomCombo = getNextCombination(
+      false,
+      previousKeyRef.current,
+      previousChordTypeRef.current
+    );
     if (!randomCombo) return;
 
     // Initialize priority mode tracking
@@ -730,10 +434,14 @@ function ChordPracticeApp() {
 
     // Reset shuffle using current selections
     updateShuffledCombinations();
-    combinationIndexRef.current = 0;
+    resetCombinationIndex();
 
     // Pick a new random combination
-    const randomCombo = getNextCombination(false);
+    const randomCombo = getNextCombination(
+      false,
+      previousKeyRef.current,
+      previousChordTypeRef.current
+    );
     if (!randomCombo) return;
 
     // Initialize priority mode tracking
@@ -820,7 +528,11 @@ function ChordPracticeApp() {
 
       if (!currentKey || selectedKeys.size === 0 || selectedChords.size === 0) {
         // Fallback to random if no current key or no selections
-        nextCombo = getNextCombination(true);
+        nextCombo = getNextCombination(
+          true,
+          previousKeyRef.current,
+          previousChordTypeRef.current
+        );
       } else {
         const availableChords = Array.from(selectedChords).filter(
           chord => !playedChordsForKeyRef.current.has(chord)
@@ -887,7 +599,11 @@ function ChordPracticeApp() {
         selectedChords.size === 0
       ) {
         // Fallback to random if no current chord or no selections
-        nextCombo = getNextCombination(true);
+        nextCombo = getNextCombination(
+          true,
+          previousKeyRef.current,
+          previousChordTypeRef.current
+        );
       } else {
         const availableKeys = Array.from(selectedKeys).filter(
           key => !playedKeysForChordRef.current.has(key)
@@ -931,7 +647,11 @@ function ChordPracticeApp() {
       }
     } else {
       // Random mode: use existing shuffle-and-cycle method
-      nextCombo = getNextCombination(true);
+      nextCombo = getNextCombination(
+        true,
+        previousKeyRef.current,
+        previousChordTypeRef.current
+      );
     }
 
     if (!nextCombo) {
@@ -1192,42 +912,6 @@ function ChordPracticeApp() {
   // Don't auto-play when chord changes - user must click Play button
   // This useEffect is removed to prevent auto-play
 
-  // Calculate total practice time
-  const totalPracticeTime = practiceSessions.reduce(
-    (sum, session) => sum + session.duration,
-    0
-  );
-
-  // Calculate stats for keys and chords
-  const keyStats: Record<string, number> = {};
-  const chordStats: Record<string, number> = {};
-
-  practiceSessions.forEach(session => {
-    // Count time for each key in this session
-    session.selectedKeys.forEach(key => {
-      keyStats[key] = (keyStats[key] || 0) + session.duration;
-    });
-    // Count time for each chord in this session
-    session.selectedChords.forEach(chord => {
-      chordStats[chord] = (chordStats[chord] || 0) + session.duration;
-    });
-  });
-
-  // Calculate percentages
-  const keyPercentages = Object.entries(keyStats)
-    .map(([key, time]) => ({
-      key,
-      percentage: totalPracticeTime > 0 ? (time / totalPracticeTime) * 100 : 0,
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
-
-  const chordPercentages = Object.entries(chordStats)
-    .map(([chord, time]) => ({
-      chord,
-      percentage: totalPracticeTime > 0 ? (time / totalPracticeTime) * 100 : 0,
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
-
   return (
     <div className="App">
       <header className="App-header">
@@ -1384,108 +1068,7 @@ function ChordPracticeApp() {
             </div>
           </div>
         ) : (
-          <div className="chord-practice-container">
-            <div className="chord-practice-panel">
-              <h2>📊 Practice Progress</h2>
-
-              {/* Statistics Summary */}
-              <div className="progress-summary">
-                <div className="stat-card">
-                  <div className="stat-label">Total Sessions</div>
-                  <div className="stat-value">{practiceSessions.length}</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Total Practice Time</div>
-                  <div className="stat-value">
-                    {Math.floor(totalPracticeTime / 60)}m{' '}
-                    {totalPracticeTime % 60}s
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Panels */}
-              <div className="stats-panels">
-                <div className="stats-panel">
-                  <h3>Practice Time by Key</h3>
-                  {keyPercentages.length > 0 ? (
-                    <div className="stats-list">
-                      {keyPercentages.map(({ key, percentage }) => (
-                        <div key={key} className="stat-item">
-                          <div className="stat-label">{key}</div>
-                          <div className="progress-bar-container">
-                            <div
-                              className="progress-bar-fill"
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                          <div className="progress-percentage">
-                            {percentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>No practice data yet.</p>
-                  )}
-                </div>
-
-                <div className="stats-panel">
-                  <h3>Practice Time by Chord</h3>
-                  {chordPercentages.length > 0 ? (
-                    <div className="stats-list">
-                      {chordPercentages.map(({ chord, percentage }) => (
-                        <div key={chord} className="stat-item">
-                          <div className="stat-label">{chord}</div>
-                          <div className="progress-bar-container">
-                            <div
-                              className="progress-bar-fill"
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                          <div className="progress-percentage">
-                            {percentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>No practice data yet.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Recent Practice Sessions */}
-              <div className="history-section">
-                <h3>Recent Practice Sessions</h3>
-                {practiceSessions.length > 0 ? (
-                  <div className="history-list">
-                    {practiceSessions.slice(0, 10).map((session, index) => (
-                      <div key={index} className="history-item">
-                        <div className="history-chord">{session.chord}</div>
-                        <div className="history-keys">
-                          Keys: {session.selectedKeys.join(', ')}
-                        </div>
-                        <div className="history-chords">
-                          Chords: {session.selectedChords.join(', ')}
-                        </div>
-                        <div className="history-meta">
-                          <span>
-                            {new Date(session.date).toLocaleDateString()}
-                          </span>
-                          <span>
-                            {Math.floor(session.duration / 60)}m{' '}
-                            {session.duration % 60}s
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p>No practice sessions yet. Start practicing!</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <ChordPracticeProgress practiceSessions={practiceSessions} />
         )}
       </header>
     </div>
