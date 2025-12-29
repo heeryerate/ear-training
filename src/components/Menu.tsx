@@ -122,6 +122,29 @@ const Menu: React.FC = () => {
             </div>
             <div className="menu-item-arrow">→</div>
           </Link>
+
+          <Link to="/tunes-library" className="menu-item">
+            <div className="menu-item-thumbnail">
+              <div className="thumbnail-content">
+                <div className="thumbnail-icon">🎵</div>
+                <div className="thumbnail-preview">
+                  <div className="preview-note">🎼</div>
+                </div>
+              </div>
+            </div>
+            <div className="menu-item-content">
+              <h3>Tunes Library</h3>
+              <div className="menu-item-status">
+                <span className="status-badge status-development">
+                  In Development
+                </span>
+                <span className="status-features">
+                  Build and practice your collection of favorite tunes
+                </span>
+              </div>
+            </div>
+            <div className="menu-item-arrow">→</div>
+          </Link>
         </div>
 
         <div className="menu-footer">

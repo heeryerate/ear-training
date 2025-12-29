@@ -9,6 +9,7 @@ import GroovePracticeApp from './components/GroovePracticeApp';
 import Menu from './components/Menu';
 import ScalePracticeApp from './components/ScalePracticeApp';
 import SightReadingApp from './components/SightReadingApp';
+import TunesLibraryApp from './components/TunesLibraryApp';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <Route path="/chord-practice" element={<ChordPracticeApp />} />
       <Route path="/groove-practice" element={<GroovePracticeApp />} />
       <Route path="/sight-reading" element={<SightReadingApp />} />
+      <Route path="/tunes-library" element={<TunesLibraryApp />} />
     </Routes>
   );
 }
