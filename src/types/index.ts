@@ -18,6 +18,7 @@ export interface ChordProgression {
 export interface NoteStats {
   correct: number;
   incorrect: number;
+  confusionPairs?: Record<string, number>;
 }
 
 export interface KeyCenter {

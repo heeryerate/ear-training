@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
+import { useUser } from '../contexts/UserContext';
 import {
   baseProgressions,
   transposeProgression,
 } from '../data/chordProgressions';
 import { getDiatonicNotes, getNoteDisplayName } from '../data/keyCenters';
+import { useUserData } from '../hooks/useUserData';
 import { ActiveTab, Note, NoteStats } from '../types';
 import ChordProgressionPanel from './ChordProgressionPanel';
 import ExercisePanel from './ExercisePanel';
@@ -27,12 +29,102 @@ function EarTrainingApp() {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [feedback, setFeedback] = useState<string>('');
 
-  // Stats tracking
+  // Stats tracking with user data sync
+  const { user } = useUser();
+  const { userData, mergeUserData } = useUserData();
   const [activeTab, setActiveTab] = useState<ActiveTab>('exercise');
-  const [noteStats, setNoteStats] = useState<Record<string, NoteStats>>({});
+  const [noteStats, setNoteStats] = useState<Record<string, NoteStats>>(() => {
+    // Load from userData if logged in, otherwise localStorage
+    if (user && userData?.earTrainingStats) {
+      // Convert userData format to NoteStats format
+      const stats: Record<string, NoteStats> = {};
+      Object.entries(userData.earTrainingStats).forEach(([note, data]) => {
+        stats[note] = {
+          correct: data.correct || 0,
+          incorrect: data.incorrect || 0,
+          confusionPairs: data.confusionPairs || {},
+        };
+      });
+      return stats;
+    }
+    const saved = localStorage.getItem('local_earTrainingStats');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [confusionPairs, setConfusionPairs] = useState<Record<string, number>>(
-    {}
+    () => {
+      // Extract confusion pairs from noteStats
+      const pairs: Record<string, number> = {};
+      Object.values(noteStats).forEach(stat => {
+        if (stat.confusionPairs) {
+          Object.assign(pairs, stat.confusionPairs);
+        }
+      });
+      return pairs;
+    }
   );
+
+  // Sync with userData when it loads
+  useEffect(() => {
+    if (user && userData?.earTrainingStats) {
+      const stats: Record<string, NoteStats> = {};
+      Object.entries(userData.earTrainingStats).forEach(([note, data]) => {
+        stats[note] = {
+          correct: data.correct || 0,
+          incorrect: data.incorrect || 0,
+          confusionPairs: data.confusionPairs || {},
+        };
+      });
+      setNoteStats(stats);
+      // Update confusion pairs
+      const pairs: Record<string, number> = {};
+      Object.values(stats).forEach(stat => {
+        if (stat.confusionPairs) {
+          Object.assign(pairs, stat.confusionPairs);
+        }
+      });
+      setConfusionPairs(pairs);
+    }
+  }, [user, userData]);
+
+  // Save stats to Firebase or localStorage
+  useEffect(() => {
+    if (Object.keys(noteStats).length > 0) {
+      // Convert NoteStats format to userData format
+      const statsToSave: Record<
+        string,
+        {
+          correct: number;
+          incorrect: number;
+          confusionPairs?: Record<string, number>;
+        }
+      > = {};
+      Object.entries(noteStats).forEach(([note, stat]) => {
+        const saveData: {
+          correct: number;
+          incorrect: number;
+          confusionPairs?: Record<string, number>;
+        } = {
+          correct: stat.correct,
+          incorrect: stat.incorrect,
+        };
+        if (stat.confusionPairs) {
+          saveData.confusionPairs = stat.confusionPairs;
+        }
+        statsToSave[note] = saveData;
+      });
+
+      if (user) {
+        mergeUserData({ earTrainingStats: statsToSave }).catch(error => {
+          console.error('Error saving ear training stats:', error);
+        });
+      } else {
+        localStorage.setItem(
+          'local_earTrainingStats',
+          JSON.stringify(noteStats)
+        );
+      }
+    }
+  }, [noteStats, user, mergeUserData]);
 
   // Chord progression and key selection
   const [selectedProgression, setSelectedProgression] = useState('I-IV-V-I');

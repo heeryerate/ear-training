@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
+import { useUser } from '../contexts/UserContext';
 import {
   getDiatonicNotes,
   getNoteDisplayName,
   keyCenters,
 } from '../data/keyCenters';
+import { useUserData } from '../hooks/useUserData';
 import KeySelectionPanel from './KeySelectionPanel';
 import SightReadingPanel from './SightReadingPanel';
 
@@ -35,7 +37,9 @@ function SightReadingApp() {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [feedback, setFeedback] = useState('');
 
-  // Progress tracking
+  // Progress tracking with user data sync
+  const { user } = useUser();
+  const { userData, mergeUserData } = useUserData();
   const [practiceSessions, setPracticeSessions] = useState<
     Array<{
       date: string;
@@ -45,8 +49,40 @@ function SightReadingApp() {
       selectedKeys: string[];
       clef: ClefType;
     }>
-  >([]);
+  >(() => {
+    // Load from userData if logged in, otherwise localStorage
+    if (user && userData?.sightReadingSessions) {
+      return userData.sightReadingSessions as any[];
+    }
+    const saved = localStorage.getItem('local_sightReadingSessions');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+
+  // Sync with userData when it loads
+  useEffect(() => {
+    if (user && userData?.sightReadingSessions) {
+      setPracticeSessions(userData.sightReadingSessions as any[]);
+    }
+  }, [user, userData]);
+
+  // Save sessions to Firebase or localStorage
+  useEffect(() => {
+    if (practiceSessions.length > 0) {
+      if (user) {
+        mergeUserData({ sightReadingSessions: practiceSessions }).catch(
+          error => {
+            console.error('Error saving sight reading sessions:', error);
+          }
+        );
+      } else {
+        localStorage.setItem(
+          'local_sightReadingSessions',
+          JSON.stringify(practiceSessions)
+        );
+      }
+    }
+  }, [practiceSessions, user, mergeUserData]);
 
   // Initialize Tone.js Sampler
   useEffect(() => {

@@ -10,18 +10,21 @@ import Menu from './components/Menu';
 import ScalePracticeApp from './components/ScalePracticeApp';
 import SightReadingApp from './components/SightReadingApp';
 import TunesLibraryApp from './components/TunesLibraryApp';
+import { UserProvider } from './contexts/UserContext';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Menu />} />
-      <Route path="/ear-training" element={<EarTrainingApp />} />
-      <Route path="/scale-practice" element={<ScalePracticeApp />} />
-      <Route path="/chord-practice" element={<ChordPracticeApp />} />
-      <Route path="/groove-practice" element={<GroovePracticeApp />} />
-      <Route path="/sight-reading" element={<SightReadingApp />} />
-      <Route path="/tunes-library" element={<TunesLibraryApp />} />
-    </Routes>
+    <UserProvider>
+      <Routes>
+        <Route path="/" element={<Menu />} />
+        <Route path="/ear-training" element={<EarTrainingApp />} />
+        <Route path="/scale-practice" element={<ScalePracticeApp />} />
+        <Route path="/chord-practice" element={<ChordPracticeApp />} />
+        <Route path="/groove-practice" element={<GroovePracticeApp />} />
+        <Route path="/sight-reading" element={<SightReadingApp />} />
+        <Route path="/tunes-library" element={<TunesLibraryApp />} />
+      </Routes>
+    </UserProvider>
   );
 }
 

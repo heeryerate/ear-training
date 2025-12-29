@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
+import { useUser } from '../contexts/UserContext';
 import { getScaleNotesForAudio, ScaleType } from '../data/scales';
 import { useScalePracticeAudio } from '../hooks/useScalePracticeAudio';
 import { useScalePracticeRandomization } from '../hooks/useScalePracticeRandomization';
 import { useScalePracticeSelection } from '../hooks/useScalePracticeSelection';
+import { useUserData } from '../hooks/useUserData';
 import {
   generatePatternDisplaySequences,
   generatePatternSequences,
@@ -86,7 +88,9 @@ function ScalePracticeApp() {
   >([]);
   const [currentSequenceIndex, setCurrentSequenceIndex] = useState<number>(0);
 
-  // Progress tracking
+  // Progress tracking with user data sync
+  const { user } = useUser();
+  const { userData, mergeUserData } = useUserData();
   const [practiceSessions, setPracticeSessions] = useState<
     Array<{
       date: string;
@@ -95,8 +99,40 @@ function ScalePracticeApp() {
       selectedKeys: string[];
       selectedScales: ScaleType[];
     }>
-  >([]);
+  >(() => {
+    // Load from userData if logged in, otherwise localStorage
+    if (user && userData?.scalePracticeSessions) {
+      return userData.scalePracticeSessions as any[];
+    }
+    const saved = localStorage.getItem('local_scalePracticeSessions');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+
+  // Sync with userData when it loads
+  useEffect(() => {
+    if (user && userData?.scalePracticeSessions) {
+      setPracticeSessions(userData.scalePracticeSessions as any[]);
+    }
+  }, [user, userData]);
+
+  // Save sessions to Firebase or localStorage
+  useEffect(() => {
+    if (practiceSessions.length > 0) {
+      if (user) {
+        mergeUserData({ scalePracticeSessions: practiceSessions }).catch(
+          error => {
+            console.error('Error saving scale practice sessions:', error);
+          }
+        );
+      } else {
+        localStorage.setItem(
+          'local_scalePracticeSessions',
+          JSON.stringify(practiceSessions)
+        );
+      }
+    }
+  }, [practiceSessions, user, mergeUserData]);
 
   // Sync refs with state
   useEffect(() => {

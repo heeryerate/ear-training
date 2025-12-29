@@ -59,7 +59,7 @@ const ScalePracticeProgress: React.FC<ScalePracticeProgressProps> = ({
 
   return (
     <div className="scale-practice-container">
-      <div className="scale-practice-panel">
+      <div className="scale-practice-panel progress-panel">
         <h2>📊 Practice Progress</h2>
 
         {/* Statistics Summary */}

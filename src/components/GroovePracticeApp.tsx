@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
+import { useUser } from '../contexts/UserContext';
 import { getGroovePattern } from '../data/groovePatterns';
 import {
   getAvailableGrooveTypes,
   getGroove,
   GrooveType,
 } from '../data/grooves';
+import { useUserData } from '../hooks/useUserData';
 import GroovePracticePanel from './GroovePracticePanel';
 import GrooveSelectionPanel from './GrooveSelectionPanel';
 
@@ -35,7 +37,9 @@ function GroovePracticeApp() {
   );
   const [bpm, setBpm] = useState(120);
 
-  // Progress tracking
+  // Progress tracking with user data sync
+  const { user } = useUser();
+  const { userData, mergeUserData } = useUserData();
   const [practiceSessions, setPracticeSessions] = useState<
     Array<{
       date: string;
@@ -45,8 +49,58 @@ function GroovePracticeApp() {
       selectedGrooves: GrooveType[];
       grooveDurations?: Partial<Record<GrooveType, number>>; // Time spent on each groove
     }>
-  >([]);
+  >(() => {
+    // Load from userData if logged in, otherwise localStorage
+    if (user && userData?.groovePracticeSessions) {
+      return userData.groovePracticeSessions.map(session => ({
+        ...session,
+        grooveType: null, // GrooveType not stored in userData, will be inferred
+        selectedGrooves: [],
+        grooveDurations: undefined,
+      })) as any[];
+    }
+    const saved = localStorage.getItem('local_groovePracticeSessions');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+
+  // Sync with userData when it loads
+  useEffect(() => {
+    if (user && userData?.groovePracticeSessions) {
+      setPracticeSessions(
+        userData.groovePracticeSessions.map(session => ({
+          ...session,
+          grooveType: null,
+          selectedGrooves: [],
+          grooveDurations: undefined,
+        })) as any[]
+      );
+    }
+  }, [user, userData]);
+
+  // Save sessions to Firebase or localStorage
+  useEffect(() => {
+    if (practiceSessions.length > 0) {
+      if (user) {
+        // Map to userData format (simplified)
+        const sessionsToSave = practiceSessions.map(s => ({
+          date: s.date,
+          groove: s.groove,
+          duration: s.duration,
+        }));
+        mergeUserData({ groovePracticeSessions: sessionsToSave }).catch(
+          error => {
+            console.error('Error saving groove practice sessions:', error);
+          }
+        );
+      } else {
+        localStorage.setItem(
+          'local_groovePracticeSessions',
+          JSON.stringify(practiceSessions)
+        );
+      }
+    }
+  }, [practiceSessions, user, mergeUserData]);
   const [sessionGrooveDurations, setSessionGrooveDurations] = useState<
     Partial<Record<GrooveType, number>>
   >({});

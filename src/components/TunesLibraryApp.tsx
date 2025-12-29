@@ -1,8 +1,9 @@
 import './TunesLibraryApp.css';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useUser } from '../contexts/UserContext';
 import {
   DifficultyLevel,
   FamiliarityLevel,
@@ -11,6 +12,7 @@ import {
   standardTunes,
   Tune,
 } from '../data/tunes';
+import { useUserData } from '../hooks/useUserData';
 
 type ActiveTab = 'library' | 'progress' | 'settings';
 
@@ -432,18 +434,99 @@ function TunesLibraryApp() {
     );
   };
 
-  // Load tune metadata from localStorage
+  const { user } = useUser();
+  const { userData, updateField } = useUserData();
+
+  // Track if we're loading from Firebase (to prevent saving during initial load)
+  const isInitialLoadRef = useRef(true);
+  const lastSavedRef = useRef<string>('');
+
+  // Load tune metadata - use user data if logged in, otherwise localStorage
   const [tuneMetadata, setTuneMetadata] = useState<
     Record<string, TuneMetadata>
   >(() => {
+    if (user && userData?.tunesMetadata) {
+      return userData.tunesMetadata;
+    }
     const saved = localStorage.getItem('tunesMetadata');
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Save to localStorage when metadata changes
+  // Sync with userData when it loads (only on initial load or when user changes)
   useEffect(() => {
-    localStorage.setItem('tunesMetadata', JSON.stringify(tuneMetadata));
-  }, [tuneMetadata]);
+    if (user && userData?.tunesMetadata) {
+      const firestoreData = userData.tunesMetadata as Record<
+        string,
+        TuneMetadata
+      >;
+      const currentDataStr = JSON.stringify(tuneMetadata);
+      const firestoreDataStr = JSON.stringify(firestoreData);
+
+      // Only update if data is different (prevents loop)
+      if (currentDataStr !== firestoreDataStr) {
+        isInitialLoadRef.current = true;
+        setTuneMetadata(firestoreData);
+        lastSavedRef.current = firestoreDataStr;
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+        }, 100);
+      }
+    } else if (!user) {
+      // Load from localStorage when logged out
+      const saved = localStorage.getItem('tunesMetadata');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setTuneMetadata(parsed);
+        lastSavedRef.current = JSON.stringify(parsed);
+      }
+    }
+  }, [user, userData?.tunesMetadata]); // Only depend on userData.tunesMetadata, not entire userData
+
+  // Save to Firebase (if logged in) or localStorage (if not) - with debouncing
+  useEffect(() => {
+    // Skip save during initial load
+    if (isInitialLoadRef.current) {
+      return;
+    }
+
+    // Only save if there's actual data (not empty object)
+    if (Object.keys(tuneMetadata).length === 0) {
+      return;
+    }
+
+    // Check if data actually changed
+    const currentDataStr = JSON.stringify(tuneMetadata);
+    if (currentDataStr === lastSavedRef.current) {
+      return; // No changes, skip save
+    }
+
+    // Debounce: wait 1 second before saving
+    const timeoutId = setTimeout(() => {
+      // Double-check data hasn't changed during debounce
+      const latestDataStr = JSON.stringify(tuneMetadata);
+      if (latestDataStr === lastSavedRef.current) {
+        return; // Already saved
+      }
+
+      if (user) {
+        // Save to Firebase
+        updateField('tunesMetadata', tuneMetadata)
+          .then(() => {
+            lastSavedRef.current = latestDataStr;
+          })
+          .catch(error => {
+            console.error('Error saving tunes metadata:', error);
+          });
+      } else {
+        // Save to localStorage
+        localStorage.setItem('tunesMetadata', JSON.stringify(tuneMetadata));
+        lastSavedRef.current = latestDataStr;
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [tuneMetadata, user, updateField]);
 
   // Merge tunes with metadata
   const tunesWithMetadata = useMemo((): TuneWithMetadata[] => {

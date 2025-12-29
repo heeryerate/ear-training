@@ -55,7 +55,7 @@ const ChordPracticeProgress: React.FC<ChordPracticeProgressProps> = ({
 
   return (
     <div className="chord-practice-container">
-      <div className="chord-practice-panel">
+      <div className="chord-practice-panel progress-panel">
         <h2>📊 Practice Progress</h2>
 
         {/* Statistics Summary */}

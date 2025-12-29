@@ -22,5 +22,5 @@
   <path d="M 120 42 Q 108 30 96 42 Q 108 54 120 42" fill="none" stroke="#333333" stroke-width="6"/>
   
   <!-- App name -->
-  <text x="96" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333333">Galetone</text>
+  <text x="96" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333333">JazzUp</text>
 </svg>

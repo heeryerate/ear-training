@@ -1,15 +1,131 @@
 import './Menu.css';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useUser } from '../contexts/UserContext';
+import { Auth } from './Auth/Auth';
+
 const Menu: React.FC = () => {
+  const { user, logout, loading } = useUser();
+  const [showAuth, setShowAuth] = useState(false);
+  const authContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // Close auth window when user successfully logs in
+  useEffect(() => {
+    if (user) {
+      setShowAuth(false);
+    }
+  }, [user]);
+
+  // Close auth window when clicking outside (on backdrop)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        authContainerRef.current &&
+        !authContainerRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest('.menu-auth-button')
+      ) {
+        setShowAuth(false);
+      }
+    };
+
+    if (showAuth) {
+      // Small delay to prevent immediate close when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showAuth]);
+
+  if (loading) {
+    return (
+      <div className="menu-container">
+        <div className="menu-content">
+          <div style={{ color: 'white', textAlign: 'center' }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="menu-container">
       <div className="menu-content">
-        <h1 className="menu-title">🎵 GaleTone Apps</h1>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            marginBottom: '20px',
+          }}
+        >
+          <h1 className="menu-title">🎵 JazzUp Apps</h1>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+              position: 'relative',
+            }}
+          >
+            {user ? (
+              <>
+                <span
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: '14px',
+                  }}
+                >
+                  {user.email}
+                </span>
+                <button onClick={handleLogout} className="menu-logout-button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowAuth(!showAuth)}
+                  className="menu-auth-button"
+                >
+                  Sign In / Sign Up
+                </button>
+                {showAuth && (
+                  <div className="auth-inline-container" ref={authContainerRef}>
+                    <Auth />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
         <p className="menu-description">
           Discover our suite of musical learning applications
+          {user && (
+            <span
+              style={{
+                display: 'block',
+                marginTop: '8px',
+                fontSize: '14px',
+                color: 'rgba(255, 255, 255, 0.7)',
+              }}
+            >
+              Your progress is being saved automatically
+            </span>
+          )}
         </p>
 
         <div className="menu-items">
@@ -155,7 +271,7 @@ const Menu: React.FC = () => {
 
           <div className="footer-bottom">
             <p className="footer-inline">
-              &copy; 2025 GaleTone. All rights reserved.
+              &copy; 2025 JazzUp. All rights reserved.
             </p>
             <p className="footer-inline">
               <a href="mailto:gale051108@gmail.com" className="email-link">

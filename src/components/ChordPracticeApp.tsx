@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as Tone from 'tone';
 
+import { useUser } from '../contexts/UserContext';
 import { ChordType, getChordNotesForAudio } from '../data/chords';
 import { useChordPracticeAudio } from '../hooks/useChordPracticeAudio';
 import { useChordPracticeRandomization } from '../hooks/useChordPracticeRandomization';
 import { useChordPracticeSelection } from '../hooks/useChordPracticeSelection';
+import { useUserData } from '../hooks/useUserData';
 import ChordPracticePanel from './ChordPracticePanel';
 import ChordPracticeProgress from './ChordPracticeProgress';
 import ChordSelectionPanel from './ChordSelectionPanel';
@@ -64,7 +66,9 @@ function ChordPracticeApp() {
     number | null
   >(null);
 
-  // Progress tracking
+  // Progress tracking with user data sync
+  const { user } = useUser();
+  const { userData, mergeUserData } = useUserData();
   const [practiceSessions, setPracticeSessions] = useState<
     Array<{
       date: string;
@@ -73,8 +77,40 @@ function ChordPracticeApp() {
       selectedKeys: string[];
       selectedChords: ChordType[];
     }>
-  >([]);
+  >(() => {
+    // Load from userData if logged in, otherwise localStorage
+    if (user && userData?.chordPracticeSessions) {
+      return userData.chordPracticeSessions as any[];
+    }
+    const saved = localStorage.getItem('local_chordPracticeSessions');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+
+  // Sync with userData when it loads
+  useEffect(() => {
+    if (user && userData?.chordPracticeSessions) {
+      setPracticeSessions(userData.chordPracticeSessions as any[]);
+    }
+  }, [user, userData]);
+
+  // Save sessions to Firebase or localStorage
+  useEffect(() => {
+    if (practiceSessions.length > 0) {
+      if (user) {
+        mergeUserData({ chordPracticeSessions: practiceSessions }).catch(
+          error => {
+            console.error('Error saving chord practice sessions:', error);
+          }
+        );
+      } else {
+        localStorage.setItem(
+          'local_chordPracticeSessions',
+          JSON.stringify(practiceSessions)
+        );
+      }
+    }
+  }, [practiceSessions, user, mergeUserData]);
 
   // Ref to track pause state for looping
   const isPausedRef = React.useRef<boolean>(false);
@@ -492,19 +528,6 @@ function ChordPracticeApp() {
 
     let nextCombo: { key: string; chord: ChordType } | null = null;
 
-    // Debug logging
-    console.log('[ChordPractice] playNextChord called:', {
-      selectedKeysSize: selectedKeys.size,
-      selectedChordsSize: selectedChords.size,
-      currentKeyRef: currentKeyRef.current,
-      currentChordTypeRef: currentChordTypeRef.current,
-      currentKeyPriorityRef: currentKeyPriorityRef.current,
-      currentChordPriorityRef: currentChordPriorityRef.current,
-      autoPlayNext: autoPlayNextRef.current,
-      playedChordsForKeySize: playedChordsForKeyRef.current.size,
-      playedKeysForChordSize: playedKeysForChordRef.current.size,
-    });
-
     // Handle different auto-play modes
     if (autoPlayNextRef.current === 'key-priority') {
       // Key priority: keep same key, cycle through chords
@@ -655,16 +678,8 @@ function ChordPracticeApp() {
     }
 
     if (!nextCombo) {
-      console.log('[ChordPractice] playNextChord: No valid combination found');
       return;
     }
-
-    // Debug logging
-    console.log('[ChordPractice] playNextChord: Selected combination:', {
-      key: nextCombo.key,
-      chord: nextCombo.chord,
-      autoPlayNext: autoPlayNextRef.current,
-    });
 
     // Update priority tracking
     if (autoPlayNextRef.current === 'key-priority') {
@@ -845,18 +860,6 @@ function ChordPracticeApp() {
         startPractice();
         return;
       }
-
-      // Debug logging
-      console.log('[ChordPractice] Selections changed:', {
-        keysChanged,
-        chordsChanged,
-        selectedKeysSize: selectedKeys.size,
-        selectedChordsSize: selectedChords.size,
-        currentKey,
-        currentChordType,
-        isPlaying,
-        autoPlayNext,
-      });
     }
 
     // If current combination is invalid (removed from selections), switch to valid one
